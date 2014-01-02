@@ -1,0 +1,10 @@
+{
+  "name": "angular-action",
+  "version": "0.1.0",
+
+  "main": "./angular-action.js",
+
+  "dependencies": {
+    "angular": ">= 1.2.6"
+  }
+}
