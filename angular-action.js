@@ -84,14 +84,24 @@ angular.module('action', [
 
         link: function postLink($scope, $element, $attr, ctrl, $transclude) {
             var name = $attr.parameter,
+                state = {
+                    value: $scope.$eval($attr.value),
+                    error: null
+                },
                 childScope = $scope.$new();
 
-            childScope.$actionParameterValue = $scope.$eval($attr.value);
+            childScope.$actionParameter = state;
+
+            // @todo remove legacy state
+            childScope.$actionParameterValue = state.value;
             childScope.$actionParameterError = null;
+            childScope.$watch('$actionParameterValue', function (v) {
+                state.value = v;
+            });
 
             // report latest value before submitting
             $scope.$on('$actionSubmitting', function (event, valueMap) {
-                valueMap[name] = childScope.$actionParameterValue;
+                valueMap[name] = state.value;
             });
 
             // copy per-parameter error on submit result
@@ -99,12 +109,17 @@ angular.module('action', [
                 var hasError = errorMap !== null && errorMap[name] !== undefined, // @todo does this work in IE8?
                     errorValue = hasError ? errorMap[name] : null;
 
-                childScope.$actionParameterError = errorValue;
+                state.error = errorValue;
+                childScope.$actionParameterError = errorValue; // @todo remove
             });
 
             // re-evaluate source value
             $scope.$on('$actionReset', function () {
-                childScope.$actionParameterValue = $scope.$eval($attr.value);
+                state.value = $scope.$eval($attr.value);
+                state.error = null;
+
+                // @todo remove legacy state
+                childScope.$actionParameterValue = state.value;
                 childScope.$actionParameterError = null;
             });
 
