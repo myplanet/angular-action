@@ -39,7 +39,7 @@ angular.module('action', [
 
                         childScope.$broadcast('$actionSubmitted', null);
 
-                        $scope.$eval(thenExpr, { value: data });
+                        childScope.$eval(thenExpr, { value: data });
                     }, function (data) {
                         var isValidationError = (!!data.$parameterErrors);
 
