@@ -41,7 +41,7 @@ angular.module('action', [
 
                         childScope.$eval(thenExpr, { value: data });
                     }, function (data) {
-                        var isValidationError = (!!data.$parameterErrors);
+                        var isValidationError = data && (!!data.$parameterErrors);
 
                         childScope.$actionIsPending = false;
                         childScope.$actionError = isValidationError ? null : data;
