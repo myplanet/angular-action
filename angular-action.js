@@ -55,10 +55,9 @@ angular.module('action', [
                 };
 
                 childScope.$actionReset = function () {
-                    // only reset if successfully complete
-                    // @todo cancel the ongoing action instead?
-                    if (!childScope.$actionIsComplete) {
-                        return;
+                    // only reset if not already pending
+                    if (childScope.$actionIsPending) {
+                        throw new Error('cannot reset pending action');
                     }
 
                     childScope.$actionIsPending = false;
