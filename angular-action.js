@@ -21,6 +21,7 @@ angular.module('action', [
                 childScope.$actionIsPending = false;
                 childScope.$actionIsComplete = false;
                 childScope.$actionError = null;
+                childScope.$actionHasError = false;
                 childScope.$actionHasParameterErrors = false;
                 childScope.$actionInvoke = function () {
                     var valueMap = {};
@@ -35,6 +36,7 @@ angular.module('action', [
                         childScope.$actionIsPending = false;
                         childScope.$actionIsComplete = true;
                         childScope.$actionError = null;
+                        childScope.$actionHasError = false;
                         childScope.$actionHasParameterErrors = false;
 
                         childScope.$broadcast('$actionSubmitted', null);
@@ -45,6 +47,7 @@ angular.module('action', [
 
                         childScope.$actionIsPending = false;
                         childScope.$actionError = isValidationError ? null : data;
+                        childScope.$actionHasError = !isValidationError;
                         childScope.$actionHasParameterErrors = isValidationError;
 
                         childScope.$broadcast('$actionSubmitted', isValidationError ? data.$parameterErrors : null);
@@ -61,6 +64,7 @@ angular.module('action', [
                     childScope.$actionIsPending = false;
                     childScope.$actionIsComplete = false; // reset back if reusing the form
                     childScope.$actionError = null;
+                    childScope.$actionHasError = false;
                     childScope.$actionHasParameterErrors = false;
 
                     childScope.$broadcast('$actionReset');
