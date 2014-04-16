@@ -102,6 +102,15 @@ angular.module('action', [
                 state.value = v;
             });
 
+            // expose live changes to parameter value
+            var onChangeExpr = $attr.onParameterChange;
+
+            if (onChangeExpr) {
+                $scope.$watch(function () { return state.value; }, function (value) {
+                    $scope.$eval(onChangeExpr, { value: value });
+                });
+            }
+
             // report latest value before submitting
             $scope.$on('$actionSubmitting', function (event, valueMap) {
                 valueMap[name] = state.value;
