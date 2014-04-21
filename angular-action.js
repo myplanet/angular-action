@@ -6,92 +6,78 @@ angular.module('action', [
 
     return {
         restrict: 'A',
-        priority: 100,
-        transclude: 'element', // @todo instead of transclusion, just introduce an inherited child scope!
-
-        $$tlb: true, // hacky "I know how to transclude" flag
+        scope: true,
 
         // @todo eliminate the "then" attribute and just chain promises elsewhere
-        link: {
-            pre: function ($scope, element, $attr, ctrl, $transclude) {
-                var childScope = $scope.$new(),
-                    doExpr = $attr['do'],
-                    thenExpr = $attr.then;
+        controller: [ '$scope', '$element', '$attrs', function (childScope, $element, $attr) {
+            var doExpr = $attr['do'],
+                thenExpr = $attr.then;
 
-                childScope.$actionIsPending = false;
-                childScope.$actionIsComplete = false;
-                childScope.$actionError = null;
-                childScope.$actionHasError = false;
-                childScope.$actionHasParameterErrors = false;
-                childScope.$actionInvoke = function () {
-                    var valueMap = {};
+            childScope.$actionIsPending = false;
+            childScope.$actionIsComplete = false;
+            childScope.$actionError = null;
+            childScope.$actionHasError = false;
+            childScope.$actionHasParameterErrors = false;
+            childScope.$actionInvoke = function () {
+                var valueMap = {};
 
-                    childScope.$actionIsPending = true;
-                    childScope.$actionIsComplete = false; // reset back if reusing the form
+                childScope.$actionIsPending = true;
+                childScope.$actionIsComplete = false; // reset back if reusing the form
 
-                    // broadcast submit to collect values from parameters
-                    childScope.$broadcast('$actionSubmitting', valueMap);
+                // broadcast submit to collect values from parameters
+                childScope.$broadcast('$actionSubmitting', valueMap);
 
-                    $scope.$eval(doExpr, { data: valueMap }).then(function (data) {
-                        childScope.$actionIsPending = false;
-                        childScope.$actionIsComplete = true;
-                        childScope.$actionError = null;
-                        childScope.$actionHasError = false;
-                        childScope.$actionHasParameterErrors = false;
-
-                        childScope.$broadcast('$actionSubmitted', null);
-
-                        childScope.$eval(thenExpr, { value: data });
-                    }, function (data) {
-                        var isValidationError = data && (!!data.$parameterErrors);
-
-                        childScope.$actionIsPending = false;
-                        childScope.$actionError = isValidationError ? null : data;
-                        childScope.$actionHasError = !isValidationError;
-                        childScope.$actionHasParameterErrors = isValidationError;
-
-                        childScope.$broadcast('$actionSubmitted', isValidationError ? data.$parameterErrors : null);
-                    });
-                };
-
-                childScope.$actionReset = function () {
-                    // only reset if not already pending
-                    if (childScope.$actionIsPending) {
-                        throw new Error('cannot reset pending action');
-                    }
-
+                childScope.$eval(doExpr, { data: valueMap }).then(function (data) {
                     childScope.$actionIsPending = false;
-                    childScope.$actionIsComplete = false; // reset back if reusing the form
+                    childScope.$actionIsComplete = true;
                     childScope.$actionError = null;
                     childScope.$actionHasError = false;
                     childScope.$actionHasParameterErrors = false;
 
-                    childScope.$broadcast('$actionReset');
-                };
+                    childScope.$broadcast('$actionSubmitted', null);
 
-                $transclude(childScope, function (clone) {
-                    element.replaceWith(clone);
+                    childScope.$eval(thenExpr, { value: data });
+                }, function (data) {
+                    var isValidationError = data && (!!data.$parameterErrors);
+
+                    childScope.$actionIsPending = false;
+                    childScope.$actionError = isValidationError ? null : data;
+                    childScope.$actionHasError = !isValidationError;
+                    childScope.$actionHasParameterErrors = isValidationError;
+
+                    childScope.$broadcast('$actionSubmitted', isValidationError ? data.$parameterErrors : null);
                 });
-            }
-        }
+            };
+
+            childScope.$actionReset = function () {
+                // only reset if not already pending
+                if (childScope.$actionIsPending) {
+                    throw new Error('cannot reset pending action');
+                }
+
+                childScope.$actionIsPending = false;
+                childScope.$actionIsComplete = false; // reset back if reusing the form
+                childScope.$actionError = null;
+                childScope.$actionHasError = false;
+                childScope.$actionHasParameterErrors = false;
+
+                childScope.$broadcast('$actionReset');
+            };
+        } ]
     };
 }).directive('parameter', function () {
     'use strict';
 
     return {
         restrict: 'A',
-        transclude: 'element',
-        priority: 100,
+        scope: true,
 
-        $$tlb: true, // hacky "I know how to transclude" flag
-
-        link: function postLink($scope, $element, $attr, ctrl, $transclude) {
+        controller: [ '$scope', '$element', '$attrs', function (childScope, $element, $attr) {
             var name = $attr.parameter,
                 state = {
-                    value: $scope.$eval($attr.value),
+                    value: childScope.$parent.$eval($attr.value),
                     error: null
-                },
-                childScope = $scope.$new();
+                };
 
             childScope.$actionParameter = state;
 
@@ -106,18 +92,18 @@ angular.module('action', [
             var onChangeExpr = $attr.onParameterChange;
 
             if (onChangeExpr) {
-                $scope.$watch(function () { return state.value; }, function (value) {
-                    $scope.$eval(onChangeExpr, { value: value });
+                childScope.$watch(function () { return state.value; }, function (value) {
+                    childScope.$eval(onChangeExpr, { value: value });
                 });
             }
 
             // report latest value before submitting
-            $scope.$on('$actionSubmitting', function (event, valueMap) {
+            childScope.$on('$actionSubmitting', function (event, valueMap) {
                 valueMap[name] = state.value;
             });
 
             // copy per-parameter error on submit result
-            $scope.$on('$actionSubmitted', function (event, errorMap) {
+            childScope.$on('$actionSubmitted', function (event, errorMap) {
                 var hasError = errorMap !== null && errorMap[name] !== undefined, // @todo does this work in IE8?
                     errorValue = hasError ? errorMap[name] : null;
 
@@ -126,18 +112,14 @@ angular.module('action', [
             });
 
             // re-evaluate source value
-            $scope.$on('$actionReset', function () {
-                state.value = $scope.$eval($attr.value);
+            childScope.$on('$actionReset', function () {
+                state.value = childScope.$parent.$eval($attr.value);
                 state.error = null;
 
                 // @todo remove legacy state
                 childScope.$actionParameterValue = state.value;
                 childScope.$actionParameterError = null;
             });
-
-            $transclude(childScope, function (clone) {
-                $element.replaceWith(clone);
-            });
-        }
+        } ]
     };
 });
