@@ -81,13 +81,6 @@ angular.module('action', [
 
             childScope.$actionParameter = state;
 
-            // @todo remove legacy state
-            childScope.$actionParameterValue = state.value;
-            childScope.$actionParameterError = null;
-            childScope.$watch('$actionParameterValue', function (v) {
-                state.value = v;
-            });
-
             // expose live changes to parameter value
             var onChangeExpr = $attr.onParameterChange;
 
