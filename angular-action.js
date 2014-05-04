@@ -38,14 +38,14 @@ angular.module('action', [
 
                     childScope.$eval(thenExpr, { value: data });
                 }, function (data) {
-                    var isValidationError = data && (!!data.$parameterErrors);
+                    var isValidationError = data && (typeof data === 'object');
 
                     childScope.$actionIsPending = false;
                     childScope.$actionError = isValidationError ? null : data;
                     childScope.$actionHasError = !isValidationError;
                     childScope.$actionHasParameterErrors = isValidationError;
 
-                    childScope.$broadcast('$actionSubmitted', isValidationError ? data.$parameterErrors : null);
+                    childScope.$broadcast('$actionSubmitted', isValidationError ? data : null);
                 });
             };
 
