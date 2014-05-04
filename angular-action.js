@@ -101,17 +101,12 @@ angular.module('action', [
                     errorValue = hasError ? errorMap[name] : null;
 
                 state.error = errorValue;
-                childScope.$actionParameterError = errorValue; // @todo remove
             });
 
             // re-evaluate source value
             childScope.$on('$actionReset', function () {
                 state.value = childScope.$parent.$eval($attr.value);
                 state.error = null;
-
-                // @todo remove legacy state
-                childScope.$actionParameterValue = state.value;
-                childScope.$actionParameterError = null;
             });
         } ]
     };
