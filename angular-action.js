@@ -19,50 +19,54 @@ angular.module('action', [
             childScope.$actionHasError = false;
             childScope.$actionHasParameterErrors = false;
             childScope.$actionInvoke = function () {
-                var validationMap = {},
-                    valueMap = {};
+                var valueMap = {},
+                    validatorMap = {},
+                    errorMap = {},
+                    hasErrors = false;
 
                 childScope.$actionIsPending = true;
                 childScope.$actionIsComplete = false; // reset back if reusing the form
 
-                // collect validation results/promises from parameters
-                childScope.$broadcast('$actionValidating', validationMap);
+                // collect values from parameters
+                childScope.$broadcast('$actionSubmitting', valueMap);
 
-                for (var param in validationMap) {
-                    validationMap[param] = $q.when(validationMap[param]);
+                // collect validators
+                childScope.$broadcast('$actionValidating', validatorMap);
+
+                for (var param in validatorMap) {
+                    var validator = validatorMap[param];
+
+                    try {
+                        validator(valueMap[param]);
+                    } catch (e) {
+                        errorMap[param] = e;
+                        hasErrors = true;
+                    }
                 }
 
-                $q.all(validationMap).then(function (errorMap) {
-                    childScope.$broadcast('$actionValidated', errorMap);
+                var action = hasErrors
+                    ? $q.reject(errorMap)
+                    : childScope.$eval(doExpr, { data: valueMap });
 
-                    // don't continue with submission if there are any validation errors
-                    for (var param in errorMap) {
-                        return;
-                    }
+                action.then(function (data) {
+                    childScope.$actionIsPending = false;
+                    childScope.$actionIsComplete = true;
+                    childScope.$actionError = null;
+                    childScope.$actionHasError = false;
+                    childScope.$actionHasParameterErrors = false;
 
-                    // collect values from parameters
-                    childScope.$broadcast('$actionSubmitting', valueMap);
+                    childScope.$broadcast('$actionSubmitted', null);
 
-                    childScope.$eval(doExpr, { data: valueMap }).then(function (data) {
-                        childScope.$actionIsPending = false;
-                        childScope.$actionIsComplete = true;
-                        childScope.$actionError = null;
-                        childScope.$actionHasError = false;
-                        childScope.$actionHasParameterErrors = false;
+                    childScope.$eval(thenExpr, { value: data });
+                }, function (data) {
+                    var isValidationError = data && (typeof data === 'object');
 
-                        childScope.$broadcast('$actionSubmitted', null);
+                    childScope.$actionIsPending = false;
+                    childScope.$actionError = isValidationError ? null : data;
+                    childScope.$actionHasError = !isValidationError;
+                    childScope.$actionHasParameterErrors = isValidationError;
 
-                        childScope.$eval(thenExpr, { value: data });
-                    }, function (data) {
-                        var isValidationError = data && (typeof data === 'object');
-
-                        childScope.$actionIsPending = false;
-                        childScope.$actionError = isValidationError ? null : data;
-                        childScope.$actionHasError = !isValidationError;
-                        childScope.$actionHasParameterErrors = isValidationError;
-
-                        childScope.$broadcast('$actionSubmitted', isValidationError ? data : null);
-                    });
+                    childScope.$broadcast('$actionSubmitted', isValidationError ? data : null);
                 });
             };
 
@@ -94,8 +98,7 @@ angular.module('action', [
                 state = {
                     value: childScope.$parent.$eval($attr.value),
                     error: null
-                },
-                validate = childScope.$parent.$eval($attr.validate);
+                };
 
             childScope.$actionParameter = state;
 
@@ -109,15 +112,12 @@ angular.module('action', [
             }
 
             // validate current value
-            childScope.$on('$actionValidating', function (event, validationMap) {
-                if (validate) {
-                    validationMap[name] = validate(state.value);
-                }
-            });
+            childScope.$on('$actionValidating', function (event, validatorMap) {
+                var validator = childScope.$parent.$eval($attr.validate);
 
-            // copy per-parameter error on validation failure
-            childScope.$on('$actionValidated', function (event, errorMap) {
-                state.error = errorMap[name];
+                if (validator) {
+                    validatorMap[name] = validator;
+                }
             });
 
             // report latest value before submitting
