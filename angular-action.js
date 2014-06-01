@@ -9,7 +9,7 @@ angular.module('action', [
         scope: true,
 
         // @todo eliminate the "then" attribute and just chain promises elsewhere
-        controller: [ '$scope', '$element', '$attrs', function (childScope, $element, $attr) {
+        controller: [ '$scope', '$element', '$attrs', '$q', function (childScope, $element, $attr, $q) {
             var doExpr = $attr['do'],
                 thenExpr = $attr.then;
 
@@ -19,15 +19,36 @@ angular.module('action', [
             childScope.$actionHasError = false;
             childScope.$actionHasParameterErrors = false;
             childScope.$actionInvoke = function () {
-                var valueMap = {};
+                var valueMap = {},
+                    validatorMap = {},
+                    errorMap = {},
+                    hasErrors = false;
 
                 childScope.$actionIsPending = true;
                 childScope.$actionIsComplete = false; // reset back if reusing the form
 
-                // broadcast submit to collect values from parameters
+                // collect values from parameters
                 childScope.$broadcast('$actionSubmitting', valueMap);
 
-                childScope.$eval(doExpr, { data: valueMap }).then(function (data) {
+                // collect validators
+                childScope.$broadcast('$actionValidating', validatorMap);
+
+                for (var param in validatorMap) {
+                    var validator = validatorMap[param];
+
+                    try {
+                        validator(valueMap[param]);
+                    } catch (e) {
+                        errorMap[param] = e;
+                        hasErrors = true;
+                    }
+                }
+
+                var action = hasErrors
+                    ? $q.reject(errorMap)
+                    : childScope.$eval(doExpr, { data: valueMap });
+
+                action.then(function (data) {
                     childScope.$actionIsPending = false;
                     childScope.$actionIsComplete = true;
                     childScope.$actionError = null;
@@ -89,6 +110,15 @@ angular.module('action', [
                     childScope.$eval(onChangeExpr, { value: value });
                 });
             }
+
+            // validate current value
+            childScope.$on('$actionValidating', function (event, validatorMap) {
+                var validator = childScope.$parent.$eval($attr.validate);
+
+                if (validator) {
+                    validatorMap[name] = validator;
+                }
+            });
 
             // report latest value before submitting
             childScope.$on('$actionSubmitting', function (event, valueMap) {
