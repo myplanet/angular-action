@@ -4,6 +4,14 @@ angular.module('action', [
 ]).directive('do', function () {
     'use strict';
 
+    function thenify(v) {
+        if (v && typeof v.then === 'function') {
+            return v;
+        }
+
+        return { then: function (callback) { callback(v); } };
+    }
+
     return {
         restrict: 'A',
         scope: true,
@@ -27,7 +35,7 @@ angular.module('action', [
                 // broadcast submit to collect values from parameters
                 childScope.$broadcast('$actionSubmitting', valueMap);
 
-                childScope.$eval(doExpr, { data: valueMap }).then(function (data) {
+                thenify(childScope.$eval(doExpr, { data: valueMap })).then(function (data) {
                     childScope.$actionIsPending = false;
                     childScope.$actionIsComplete = true;
                     childScope.$actionError = null;
