@@ -4,6 +4,7 @@
   "description": "View-model for Angular forms",
   "dependencies": {},
   "devDependencies": {
+    "bower": "~1.2",
     "karma-coverage": "~0.1.0",
     "karma-html2js-preprocessor": "~0.1.0",
     "karma-jasmine": "~0.1.3",
@@ -11,6 +12,7 @@
     "karma": "~0.10.2"
   },
   "scripts": {
+    "postinstall": "./node_modules/.bin/bower install",
     "test": "./node_modules/.bin/karma start --single-run --browsers PhantomJS"
   },
   "license": "MIT"
