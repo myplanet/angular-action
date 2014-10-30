@@ -29,7 +29,6 @@ describe('angular-action do directive', function () {
         expect(subScopeMap.MAIN.$actionIsComplete).toBe(false);
         expect(subScopeMap.MAIN.$actionError).toBe(null);
         expect(subScopeMap.MAIN.$actionHasError).toBe(false);
-        expect(subScopeMap.MAIN.$actionHasParameterErrors).toBe(false);
         expect(subScopeMap.MAIN.$actionInvoke).toEqual(jasmine.any(Function));
         expect(subScopeMap.MAIN.$actionReset).toEqual(jasmine.any(Function));
     });
@@ -48,7 +47,6 @@ describe('angular-action do directive', function () {
         expect(subScopeMap.MAIN.$actionIsComplete).toBe(true);
         expect(subScopeMap.MAIN.$actionError).toBe(null);
         expect(subScopeMap.MAIN.$actionHasError).toBe(false);
-        expect(subScopeMap.MAIN.$actionHasParameterErrors).toBe(false);
 
         expect(subScopeMap.A.$actionParameter.error).toBe(null);
         expect(subScopeMap.B.$actionParameter.error).toBe(null);
@@ -101,7 +99,6 @@ describe('angular-action do directive', function () {
             expect(subScopeMap.MAIN.$actionIsComplete).toBe(false);
             expect(subScopeMap.MAIN.$actionError).toBe(null);
             expect(subScopeMap.MAIN.$actionHasError).toBe(false);
-            expect(subScopeMap.MAIN.$actionHasParameterErrors).toBe(false);
         });
 
         it('updates action error state on simple error', function () {
@@ -111,30 +108,28 @@ describe('angular-action do directive', function () {
             expect(subScopeMap.MAIN.$actionIsComplete).toBe(false);
             expect(subScopeMap.MAIN.$actionError).toBe('SIMPLE_ERROR');
             expect(subScopeMap.MAIN.$actionHasError).toBe(true);
-            expect(subScopeMap.MAIN.$actionHasParameterErrors).toBe(false);
 
             expect(subScopeMap.A.$actionParameter.error).toBe(null);
             expect(subScopeMap.B.$actionParameter.error).toBe(null);
         });
 
-        it('updates action error state on parameter error', function () {
-            subScopeMap.MAIN.$apply(function () { testActionResult.reject({ TEST_PARAM_B: 'PARAM_ERROR' }); });
+        it('updates action error state on complex error', function () {
+            subScopeMap.MAIN.$apply(function () { testActionResult.reject({ error: 'COMPLEX_ERROR' }); });
 
             expect(subScopeMap.MAIN.$actionIsPending).toBe(false);
             expect(subScopeMap.MAIN.$actionIsComplete).toBe(false);
-            expect(subScopeMap.MAIN.$actionError).toBe(null);
-            expect(subScopeMap.MAIN.$actionHasError).toBe(false);
-            expect(subScopeMap.MAIN.$actionHasParameterErrors).toBe(true);
+            expect(subScopeMap.MAIN.$actionError).toEqual({ error: 'COMPLEX_ERROR' });
+            expect(subScopeMap.MAIN.$actionHasError).toBe(true);
 
             expect(subScopeMap.A.$actionParameter.error).toBe(null);
-            expect(subScopeMap.B.$actionParameter.error).toBe('PARAM_ERROR');
+            expect(subScopeMap.B.$actionParameter.error).toBe(null);
         });
 
         it('updates action state on success, clearing old errors', inject(function ($q) {
             var secondActionResult = $q.defer();
             var secondAction = jasmine.createSpy('second action').andReturn(secondActionResult.promise);
 
-            subScopeMap.MAIN.$apply(function () { testActionResult.reject({ TEST_PARAM_B: 'PARAM_ERROR' }); });
+            subScopeMap.MAIN.$apply(function () { testActionResult.reject('ERROR'); });
 
             scope.testAction = secondAction;
             subScopeMap.MAIN.$apply(function () { subScopeMap.MAIN.$actionInvoke(); });
@@ -147,7 +142,6 @@ describe('angular-action do directive', function () {
             expect(subScopeMap.MAIN.$actionIsComplete).toBe(true);
             expect(subScopeMap.MAIN.$actionError).toBe(null);
             expect(subScopeMap.MAIN.$actionHasError).toBe(false);
-            expect(subScopeMap.MAIN.$actionHasParameterErrors).toBe(false);
 
             expect(subScopeMap.A.$actionParameter.error).toBe(null);
             expect(subScopeMap.B.$actionParameter.error).toBe(null);
@@ -157,7 +151,7 @@ describe('angular-action do directive', function () {
             var secondActionResult = $q.defer();
             var secondAction = jasmine.createSpy('second action').andReturn(secondActionResult.promise);
 
-            subScopeMap.MAIN.$apply(function () { testActionResult.reject({ TEST_PARAM_B: 'PARAM_ERROR' }); });
+            subScopeMap.MAIN.$apply(function () { testActionResult.reject('ERROR'); });
 
             scope.testAction = secondAction;
             subScopeMap.MAIN.$apply(function () { subScopeMap.MAIN.$actionInvoke(); });
@@ -166,12 +160,11 @@ describe('angular-action do directive', function () {
 
             expect(subScopeMap.MAIN.$actionIsPending).toBe(true);
             expect(subScopeMap.MAIN.$actionIsComplete).toBe(false);
-            expect(subScopeMap.MAIN.$actionError).toBe(null);
-            expect(subScopeMap.MAIN.$actionHasError).toBe(false);
-            expect(subScopeMap.MAIN.$actionHasParameterErrors).toBe(true);
+            expect(subScopeMap.MAIN.$actionError).toBe('ERROR');
+            expect(subScopeMap.MAIN.$actionHasError).toBe(true);
 
             expect(subScopeMap.A.$actionParameter.error).toBe(null);
-            expect(subScopeMap.B.$actionParameter.error).toBe('PARAM_ERROR');
+            expect(subScopeMap.B.$actionParameter.error).toBe(null);
         }));
     });
 });

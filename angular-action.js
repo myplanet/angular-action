@@ -36,7 +36,6 @@
                     childScope.$actionIsComplete = false;
                     childScope.$actionError = null;
                     childScope.$actionHasError = false;
-                    childScope.$actionHasParameterErrors = false;
                     childScope.$actionInvoke = function () {
                         var valueMap = {};
 
@@ -51,20 +50,12 @@
                             childScope.$actionIsComplete = true;
                             childScope.$actionError = null;
                             childScope.$actionHasError = false;
-                            childScope.$actionHasParameterErrors = false;
-
-                            childScope.$broadcast('$actionSubmitted', null);
 
                             childScope.$eval(thenExpr, { value: data });
                         }, function (data) {
-                            var isValidationError = data && (typeof data === 'object');
-
                             childScope.$actionIsPending = false;
-                            childScope.$actionError = isValidationError ? null : data;
-                            childScope.$actionHasError = !isValidationError;
-                            childScope.$actionHasParameterErrors = isValidationError;
-
-                            childScope.$broadcast('$actionSubmitted', isValidationError ? data : null);
+                            childScope.$actionError = data;
+                            childScope.$actionHasError = true;
                         });
                     };
 
@@ -78,7 +69,6 @@
                         childScope.$actionIsComplete = false; // reset back if reusing the form
                         childScope.$actionError = null;
                         childScope.$actionHasError = false;
-                        childScope.$actionHasParameterErrors = false;
 
                         childScope.$broadcast('$actionReset');
                     };
@@ -111,14 +101,6 @@
                     // report latest value before submitting
                     childScope.$on('$actionSubmitting', function (event, valueMap) {
                         valueMap[name] = state.value;
-                    });
-
-                    // copy per-parameter error on submit result
-                    childScope.$on('$actionSubmitted', function (event, errorMap) {
-                        var hasError = errorMap !== null && errorMap[name] !== undefined, // @todo does this work in IE8?
-                            errorValue = hasError ? errorMap[name] : null;
-
-                        state.error = errorValue;
                     });
 
                     // re-evaluate source value
