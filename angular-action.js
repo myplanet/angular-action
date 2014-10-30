@@ -15,20 +15,12 @@
 
     return angular.module('mp.action', [])
         .directive('do', function () {
-            function thenify(v) {
-                if (v && typeof v.then === 'function') {
-                    return v;
-                }
-
-                return { then: function (callback) { callback(v); } };
-            }
-
             return {
                 restrict: 'A',
                 scope: true,
 
                 // @todo eliminate the "then" attribute and just chain promises elsewhere
-                controller: [ '$scope', '$element', '$attrs', function (childScope, $element, $attr) {
+                controller: [ '$scope', '$element', '$attrs', '$q', function (childScope, $element, $attr, $q) {
                     var doExpr = $attr['do'],
                         thenExpr = $attr.then;
 
@@ -37,25 +29,36 @@
                     childScope.$actionError = null;
                     childScope.$actionHasError = false;
                     childScope.$actionInvoke = function () {
-                        var valueMap = {};
-
                         childScope.$actionIsPending = true;
                         childScope.$actionIsComplete = false; // reset back if reusing the form
 
-                        // broadcast submit to collect values from parameters
-                        childScope.$broadcast('$actionSubmitting', valueMap);
+                        var validationList = [];
 
-                        thenify(childScope.$eval(doExpr, { data: valueMap })).then(function (data) {
-                            childScope.$actionIsPending = false;
-                            childScope.$actionIsComplete = true;
-                            childScope.$actionError = null;
-                            childScope.$actionHasError = false;
+                        // broadcast to validate parameter values
+                        childScope.$broadcast('$actionValidating', function (validation) {
+                            validationList.push(validation);
+                        });
 
-                            childScope.$eval(thenExpr, { value: data });
-                        }, function (error) {
+                        $q.all(validationList).then(function () {
+                            var valueMap = {};
+
+                            // broadcast to collect values from parameters
+                            childScope.$broadcast('$actionSubmitting', function (key, value) {
+                                valueMap[key] = value;
+                            });
+
+                            return $q.when(childScope.$eval(doExpr, { data: valueMap })).then(function (data) {
+                                childScope.$actionIsComplete = true;
+                                childScope.$actionError = null;
+                                childScope.$actionHasError = false;
+
+                                childScope.$eval(thenExpr, { value: data });
+                            }, function (data) {
+                                childScope.$actionError = data;
+                                childScope.$actionHasError = true;
+                            });
+                        })['finally'](function () {
                             childScope.$actionIsPending = false;
-                            childScope.$actionError = error;
-                            childScope.$actionHasError = true;
                         });
                     };
 
@@ -80,12 +83,13 @@
                 restrict: 'A',
                 scope: true,
 
-                controller: [ '$scope', '$element', '$attrs', function (childScope, $element, $attr) {
+                controller: [ '$scope', '$element', '$attrs', '$q', function (childScope, $element, $attr, $q) {
                     var name = $attr.parameter,
                         state = {
                             value: childScope.$parent.$eval($attr.value),
                             error: null
-                        };
+                        },
+                        validate = childScope.$parent.$eval($attr.validate);
 
                     childScope.$actionParameter = state;
 
@@ -98,9 +102,30 @@
                         });
                     }
 
+                    // validate value before submitting
+                    childScope.$on('$actionValidating', function (event, reportValidation) {
+                        if (validate) {
+                            state.error = null;
+
+                            var validation;
+
+                            try {
+                                validation = $q.when(validate.call(null, state.value));
+                            } catch (e) {
+                                validation = $q.reject(e);
+                            }
+
+                            validation.catch(function (error) {
+                                state.error = error;
+                            });
+
+                            reportValidation(validation);
+                        }
+                    });
+
                     // report latest value before submitting
-                    childScope.$on('$actionSubmitting', function (event, valueMap) {
-                        valueMap[name] = state.value;
+                    childScope.$on('$actionSubmitting', function (event, reportValue) {
+                        reportValue(name, state.value);
                     });
 
                     // re-evaluate source value
