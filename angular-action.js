@@ -52,9 +52,9 @@
                             childScope.$actionHasError = false;
 
                             childScope.$eval(thenExpr, { value: data });
-                        }, function (data) {
+                        }, function (error) {
                             childScope.$actionIsPending = false;
-                            childScope.$actionError = data;
+                            childScope.$actionError = error;
                             childScope.$actionHasError = true;
                         });
                     };
