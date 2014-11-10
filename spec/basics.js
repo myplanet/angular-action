@@ -1,16 +1,16 @@
 describe('angular-action do directive', function () {
-    var scope, contentScope, paramAScope, paramBScope, testAction, testThen;
+    var scope, contentScope, paramAScope, paramBScope, actionStub, postActionStub;
 
     beforeEach(module('mp.action'));
 
     beforeEach(inject(function ($rootScope, $compile) {
         scope = $rootScope.$new();
 
-        testAction = scope.testAction = jasmine.createSpy('testAction');
-        testThen = scope.testThen = jasmine.createSpy('testThen');
+        actionStub = scope.actionStub = jasmine.createSpy('actionStub');
+        postActionStub = scope.postActionStub = jasmine.createSpy('postActionStub');
 
         var dom = angular.element(
-            '<div do="testAction(data)" then="testThen(value)">' +
+            '<div do="actionStub(data)" then="postActionStub(value)">' +
             '<span><!-- content scope outside of parameters --></span>' +
             '<div parameter="TEST_PARAM_A" value="\'INIT_VALUE\'"><span><!-- parameter scope --></span></div>' +
             '<div parameter="TEST_PARAM_B"><span><!-- parameter scope --></span></div>' +
@@ -37,11 +37,11 @@ describe('angular-action do directive', function () {
     it('invokes the action expression when "$actionInvoke" is called', function () {
         contentScope.$apply(function () { contentScope.$actionInvoke(); });
 
-        expect(testAction).toHaveBeenCalled();
+        expect(actionStub).toHaveBeenCalled();
     });
 
     it('handles non-thenable values returned by action expression', function () {
-        testAction.andReturn('SIMPLE_VALUE');
+        actionStub.andReturn('SIMPLE_VALUE');
         contentScope.$apply(function () { contentScope.$actionInvoke(); });
 
         expect(contentScope.$actionIsPending).toBe(false);
@@ -54,10 +54,10 @@ describe('angular-action do directive', function () {
     });
 
     it('invokes "then" expression after success', function () {
-        testAction.andReturn('TEST_RESULT');
+        actionStub.andReturn('TEST_RESULT');
         contentScope.$apply(function () { contentScope.$actionInvoke(); });
 
-        expect(testThen).toHaveBeenCalledWith('TEST_RESULT');
+        expect(postActionStub).toHaveBeenCalledWith('TEST_RESULT');
     });
 
     it('tracks individual parameter state objects separately', function () {
@@ -67,14 +67,14 @@ describe('angular-action do directive', function () {
     it('passes initial parameter value to action expression', function () {
         contentScope.$apply(function () { contentScope.$actionInvoke(); });
 
-        expect(testAction).toHaveBeenCalledWith({ TEST_PARAM_A: 'INIT_VALUE' });
+        expect(actionStub).toHaveBeenCalledWith({ TEST_PARAM_A: 'INIT_VALUE' });
     });
 
     it('passes latest parameter value to action expression', function () {
         paramAScope.$actionParameter.value = 'LATEST_VALUE';
         contentScope.$apply(function () { contentScope.$actionInvoke(); });
 
-        expect(testAction).toHaveBeenCalledWith({ TEST_PARAM_A: 'LATEST_VALUE' });
+        expect(actionStub).toHaveBeenCalledWith({ TEST_PARAM_A: 'LATEST_VALUE' });
     });
 
     it('defines scope "$actionParameter" value using initial value', function () {
@@ -90,7 +90,7 @@ describe('angular-action do directive', function () {
 
         beforeEach(inject(function ($q) {
             testActionResult = $q.defer();
-            testAction.andReturn(testActionResult.promise);
+            actionStub.andReturn(testActionResult.promise);
 
             contentScope.$apply(function () { contentScope.$actionInvoke(); });
         }));
@@ -132,7 +132,7 @@ describe('angular-action do directive', function () {
 
             contentScope.$apply(function () { testActionResult.reject('ERROR'); });
 
-            scope.testAction = secondAction;
+            scope.actionStub = secondAction;
             contentScope.$apply(function () { contentScope.$actionInvoke(); });
 
             contentScope.$apply(function () { secondActionResult.resolve('SUCCESS'); });
@@ -154,7 +154,7 @@ describe('angular-action do directive', function () {
 
             contentScope.$apply(function () { testActionResult.reject('ERROR'); });
 
-            scope.testAction = secondAction;
+            scope.actionStub = secondAction;
             contentScope.$apply(function () { contentScope.$actionInvoke(); });
 
             expect(secondAction).toHaveBeenCalled();
