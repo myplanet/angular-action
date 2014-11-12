@@ -28,35 +28,27 @@
                     childScope.$actionIsComplete = false;
                     childScope.$actionError = null;
                     childScope.$actionHasError = false;
+
                     childScope.$actionInvoke = function () {
                         childScope.$actionIsPending = true;
                         childScope.$actionIsComplete = false; // reset back if reusing the form
 
-                        var validationList = [];
+                        var valueMap = {};
 
-                        // broadcast to validate parameter values
-                        childScope.$broadcast('$actionValidating', function (validation) {
-                            validationList.push(validation);
+                        // broadcast to collect values from parameters
+                        childScope.$broadcast('$actionSubmitting', function (key, value) {
+                            valueMap[key] = value;
                         });
 
-                        $q.all(validationList).then(function () {
-                            var valueMap = {};
+                        return $q.when(childScope.$eval(doExpr, { data: valueMap })).then(function (data) {
+                            childScope.$actionIsComplete = true;
+                            childScope.$actionError = null;
+                            childScope.$actionHasError = false;
 
-                            // broadcast to collect values from parameters
-                            childScope.$broadcast('$actionSubmitting', function (key, value) {
-                                valueMap[key] = value;
-                            });
-
-                            return $q.when(childScope.$eval(doExpr, { data: valueMap })).then(function (data) {
-                                childScope.$actionIsComplete = true;
-                                childScope.$actionError = null;
-                                childScope.$actionHasError = false;
-
-                                childScope.$eval(thenExpr, { value: data });
-                            }, function (data) {
-                                childScope.$actionError = data;
-                                childScope.$actionHasError = true;
-                            });
+                            childScope.$eval(thenExpr, { data: data });
+                        }, function (data) {
+                            childScope.$actionError = data;
+                            childScope.$actionHasError = true;
                         })['finally'](function () {
                             childScope.$actionIsPending = false;
                         });
@@ -89,43 +81,26 @@
                             value: childScope.$parent.$eval($attr.value),
                             error: null
                         },
-                        validate = childScope.$parent.$eval($attr.validate);
+                        collectExpr = $attr.collect,
+                        onChangeExpr = $attr.onParameterChange;
 
-                    childScope.$actionParameter = state;
+                    childScope.$actionData = state;
 
-                    // expose live changes to parameter value
-                    var onChangeExpr = $attr.onParameterChange;
+                    function collect() {
+                        return childScope.$parent.$eval([ '$value', onChangeExpr ].join('|'), { $value: state.value });
+                    }
 
                     if (onChangeExpr) {
-                        childScope.$watch(function () { return state.value; }, function (value) {
-                            childScope.$eval(onChangeExpr, { value: value });
+                        childScope.$watch(function () {
+                            return state.value;
+                        }, function () {
+                            childScope.$eval(onChangeExpr, { $value: collect() });
                         });
                     }
 
-                    // validate value before submitting
-                    childScope.$on('$actionValidating', function (event, reportValidation) {
-                        if (validate) {
-                            state.error = null;
-
-                            var validation;
-
-                            try {
-                                validation = $q.when(validate.call(null, state.value));
-                            } catch (e) {
-                                validation = $q.reject(e);
-                            }
-
-                            validation.catch(function (error) {
-                                state.error = error;
-                            });
-
-                            reportValidation(validation);
-                        }
-                    });
-
                     // report latest value before submitting
-                    childScope.$on('$actionSubmitting', function (event, reportValue) {
-                        reportValue(name, state.value);
+                    childScope.$on('$actionCollect', function (event, reportValue) {
+                        reportValue(name, collect());
                     });
 
                     // re-evaluate source value
