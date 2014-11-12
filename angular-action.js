@@ -36,7 +36,7 @@
                         var valueMap = {};
 
                         // broadcast to collect values from parameters
-                        childScope.$broadcast('$actionSubmitting', function (key, value) {
+                        childScope.$broadcast('$actionCollect', function (key, value) {
                             valueMap[key] = value;
                         });
 
