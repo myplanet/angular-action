@@ -52,11 +52,10 @@ describe('angular-action parameter directive', function () {
         var callbackStub;
 
         beforeEach(function () {
+            callbackStub = jasmine.createSpy('callbackStub');
+
             compile(
-                '<div parameter="TEST_PARAM"><span><!-- parameter scope --></span></div>',
-                {
-                    callbackStub: callbackStub = jasmine.createSpy('callbackStub')
-                }
+                '<div parameter="TEST_PARAM"><span><!-- parameter scope --></span></div>'
             );
         });
 
@@ -70,27 +69,48 @@ describe('angular-action parameter directive', function () {
     });
 
     describe('collect attribute', function () {
+        describe('when a filter expression is supplied', function () {
+            var callbackStub;
+
+            beforeEach(function () {
+                callbackStub = jasmine.createSpy('callbackStub');
+
+                compile(
+                    '<div parameter="TEST_PARAM" collect="lowercase"><span><!-- parameter scope --></span></div>'
+                );
+            });
+
+            it('calls the callback with its name and current value after passing it through the filters', function () {
+                paramScope.$actionData.value = 'CURRENT_VALUE';
+
+                scope.$broadcast('$actionCollecting', callbackStub);
+
+                expect(callbackStub).toHaveBeenCalledWith('TEST_PARAM', 'current_value');
+            });
+        });
     });
 
     describe('on-parameter-change attribute', function () {
-        var onParameterChangeStub;
+        describe('when an expression is supplied', function () {
+            var onParameterChangeStub;
 
-        beforeEach(function () {
-            compile(
-                '<div parameter="TEST_PARAM" on-parameter-change="onParameterChangeStub($value)"><span><!-- parameter scope --></span></div>',
-                {
-                    onParameterChangeStub: onParameterChangeStub = jasmine.createSpy('onParameterChangeStub')
-                }
-            );
-        });
+            beforeEach(function () {
+                compile(
+                    '<div parameter="TEST_PARAM" on-parameter-change="onParameterChangeStub($value)"><span><!-- parameter scope --></span></div>',
+                    {
+                        onParameterChangeStub: onParameterChangeStub = jasmine.createSpy('onParameterChangeStub')
+                    }
+                );
+            });
 
-        it('the expression in the attribute value is evaluated with local variable $value having the new value when the parameter value changes', function () {
-            expect(onParameterChangeStub).not.toHaveBeenCalled();
+            it('the expression in the attribute value is evaluated with local variable $value having the new value when the parameter value changes', function () {
+                expect(onParameterChangeStub).not.toHaveBeenCalled();
 
-            paramScope.$actionData.value = 'CURRENT_VALUE';
-            paramScope.$digest();
+                paramScope.$actionData.value = 'CURRENT_VALUE';
+                paramScope.$digest();
 
-            expect(onParameterChangeStub).toHaveBeenCalledWith('CURRENT_VALUE');
+                expect(onParameterChangeStub).toHaveBeenCalledWith('CURRENT_VALUE');
+            });
         });
     });
 });
