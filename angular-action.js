@@ -87,7 +87,9 @@
                     childScope.$actionData = state;
 
                     function collect() {
-                        return childScope.$parent.$eval([ '$value', onChangeExpr ].join('|'), { $value: state.value });
+                        return collectExpr
+                            ? childScope.$parent.$eval([ '$value', collectExpr ].join('|'), { $value: state.value })
+                            : state.value;
                     }
 
                     if (onChangeExpr) {
