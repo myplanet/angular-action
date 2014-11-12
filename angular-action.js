@@ -36,7 +36,7 @@
                         var valueMap = {};
 
                         // broadcast to collect values from parameters
-                        childScope.$broadcast('$actionCollect', function (key, value) {
+                        childScope.$broadcast('$actionCollecting', function (key, value) {
                             valueMap[key] = value;
                         });
 
@@ -88,20 +88,22 @@
 
                     function collect() {
                         return collectExpr
-                            ? childScope.$parent.$eval([ '$value', collectExpr ].join('|'), { $value: state.value })
+                            ? childScope.$parent.$eval('$value | ' + collectExpr, { $value: state.value })
                             : state.value;
                     }
 
                     if (onChangeExpr) {
                         childScope.$watch(function () {
                             return state.value;
-                        }, function () {
-                            childScope.$eval(onChangeExpr, { $value: collect() });
+                        }, function (newVal, oldVal) {
+                            if (newVal !== oldVal) {
+                                childScope.$eval(onChangeExpr, { $value: collect() });
+                            }
                         });
                     }
 
                     // report latest value before submitting
-                    childScope.$on('$actionCollect', function (event, reportValue) {
+                    childScope.$on('$actionCollecting', function (event, reportValue) {
                         reportValue(name, collect());
                     });
 

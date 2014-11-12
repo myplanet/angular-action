@@ -1,37 +1,96 @@
 describe('angular-action parameter directive', function () {
-    var scope, contentScope, paramScope, setValueStub;
+    var scope,
+        paramScope;
+
+    function compile(html, scopeProperties) {
+        inject(function ($rootScope, $compile) {
+            scope = $rootScope.$new();
+            angular.extend(scope, scopeProperties);
+
+            var dom = angular.element(html);
+
+            $compile(dom)(scope);
+            scope.$digest();
+
+            paramScope = dom.children().eq(0).scope();
+        });
+    }
 
     beforeEach(module('mp.action'));
 
-    beforeEach(inject(function ($rootScope, $compile) {
-        scope = $rootScope.$new();
+    describe('scope properties', function () {
+        describe('when value attribute not specified', function () {
+            beforeEach(function () {
+                compile(
+                    '<div parameter="TEST_PARAM"><span><!-- parameter scope --></span></div>'
+                );
+            });
 
-        setValueStub = scope.setValueStub = jasmine.createSpy('setValueStub');
+            it('defines scope "$actionData" value as undefined', function () {
+                expect(paramScope.$actionData.value).toBe(undefined);
+            });
+        });
 
-        var dom = angular.element(
-            '<div parameter="TEST_PARAM" value="\'INIT_VALUE\'"><span><!-- parameter scope --></span></div>'
-        );
+        describe('when value attribute specified', function () {
+            beforeEach(function () {
+                compile(
+                    '<div parameter="TEST_PARAM" value="\'INIT_VALUE\'"><span><!-- parameter scope --></span></div>'
+                );
+            });
 
-        $compile(dom)(scope);
-        scope.$digest();
+            it('defines scope "$actionData" value using specified value', function () {
+                expect(paramScope.$actionData.value).toBe('INIT_VALUE');
+            });
+        });
 
-        paramScope = dom.children().eq(0).scope();
-    }));
-
-    it('defines scope "$actionData" value using initial value', function () {
-        expect(paramScope.$actionData.value).toBe('INIT_VALUE');
+        it('defines scope "$actionData" error as null', function () {
+            expect(paramScope.$actionData.error).toBe(null);
+        });
     });
 
-    it('defines scope "$actionData" error as null', function () {
-        expect(paramScope.$actionData.error).toBe(null);
+    describe('when $actionCollecting event received with a callback as the payload', function () {
+        var callbackStub;
+
+        beforeEach(function () {
+            compile(
+                '<div parameter="TEST_PARAM"><span><!-- parameter scope --></span></div>',
+                {
+                    callbackStub: callbackStub = jasmine.createSpy('callbackStub')
+                }
+            );
+        });
+
+        it('calls the callback with its name and current value', function () {
+            paramScope.$actionData.value = 'CURRENT_VALUE';
+
+            scope.$broadcast('$actionCollecting', callbackStub);
+
+            expect(callbackStub).toHaveBeenCalledWith('TEST_PARAM', 'CURRENT_VALUE');
+        });
     });
 
-    describe('when $actionCollect event is received', function () {
+    describe('collect attribute', function () {
+    });
 
-        it('calls the setValue callback with its name and current value', function () {
-            scope.$broadcast('$actionCollect', setValueStub);
+    describe('on-parameter-change attribute', function () {
+        var onParameterChangeStub;
 
-            expect(setValueStub).toHaveBeenCalledWith('TEST_PARAM', 'INIT_VALUE');
+        beforeEach(function () {
+            compile(
+                '<div parameter="TEST_PARAM" on-parameter-change="onParameterChangeStub($value)"><span><!-- parameter scope --></span></div>',
+                {
+                    onParameterChangeStub: onParameterChangeStub = jasmine.createSpy('onParameterChangeStub')
+                }
+            );
+        });
+
+        it('the expression in the attribute value is evaluated with local variable $value having the new value when the parameter value changes', function () {
+            expect(onParameterChangeStub).not.toHaveBeenCalled();
+
+            paramScope.$actionData.value = 'CURRENT_VALUE';
+            paramScope.$digest();
+
+            expect(onParameterChangeStub).toHaveBeenCalledWith('CURRENT_VALUE');
         });
     });
 });
