@@ -40,12 +40,12 @@
                             valueMap[key] = value;
                         });
 
-                        return $q.when(childScope.$eval(doExpr, { data: valueMap })).then(function (data) {
+                        return $q.when(childScope.$eval(doExpr, { $data: valueMap })).then(function (data) {
                             childScope.$actionIsComplete = true;
                             childScope.$actionError = null;
                             childScope.$actionHasError = false;
 
-                            childScope.$eval(thenExpr, { data: data });
+                            childScope.$eval(thenExpr, { $data: data });
                         }, function (data) {
                             childScope.$actionError = data;
                             childScope.$actionHasError = true;
