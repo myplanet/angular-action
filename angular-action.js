@@ -77,6 +77,10 @@
                 scope: true,
 
                 controller: [ '$scope', '$element', '$attrs', function (childScope, $element, $attr) {
+                    if (!$attr.hasOwnProperty('collect')) {
+                        throw new Error('The collect attribute is mandatory');
+                    }
+
                     var name = $attr.parameter,
                         state = {
                             value: childScope.$parent.$eval($attr.value),

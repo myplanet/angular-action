@@ -22,7 +22,7 @@ describe('angular-action parameter directive', function () {
         describe('when value attribute not specified', function () {
             beforeEach(function () {
                 compile(
-                    '<div parameter="TEST_PARAM"><span><!-- parameter scope --></span></div>'
+                    '<div parameter="TEST_PARAM" collect><span><!-- parameter scope --></span></div>'
                 );
             });
 
@@ -38,7 +38,7 @@ describe('angular-action parameter directive', function () {
         describe('when value attribute specified', function () {
             beforeEach(function () {
                 compile(
-                    '<div parameter="TEST_PARAM" value="\'INIT_VALUE\'"><span><!-- parameter scope --></span></div>'
+                    '<div parameter="TEST_PARAM" value="\'INIT_VALUE\'" collect><span><!-- parameter scope --></span></div>'
                 );
             });
 
@@ -61,7 +61,7 @@ describe('angular-action parameter directive', function () {
             reportErrorStub = jasmine.createSpy('reportErrorStub');
 
             compile(
-                '<div parameter="TEST_PARAM" value="\'INIT_VALUE\'"><span><!-- parameter scope --></span></div>'
+                '<div parameter="TEST_PARAM" value="\'INIT_VALUE\'" collect><span><!-- parameter scope --></span></div>'
             );
 
             scope.$broadcast('$actionCollecting', reportValueStub, reportErrorStub);
@@ -81,6 +81,16 @@ describe('angular-action parameter directive', function () {
     });
 
     describe('collect attribute', function () {
+        describe('when not present', function () {
+            it('causes an exception to be thrown', function () {
+                expect(function () {
+                    compile(
+                        '<div parameter="TEST_PARAM"><span><!-- parameter scope --></span></div>'
+                    );
+                }).toThrow();
+            });
+        });
+
         describe('when a filter expression is supplied', function () {
             describe('when none of the filters cause an exception', function () {
                 var reportValueStub,
@@ -158,7 +168,7 @@ describe('angular-action parameter directive', function () {
                 onParameterChangeStub = jasmine.createSpy('onParameterChangeStub');
 
                 compile(
-                    '<div parameter="TEST_PARAM" value="\'INIT_VALUE\'" on-parameter-change="onParameterChangeStub($value)"><span><!-- parameter scope --></span></div>',
+                    '<div parameter="TEST_PARAM" value="\'INIT_VALUE\'" collect on-parameter-change="onParameterChangeStub($value)"><span><!-- parameter scope --></span></div>',
                     {
                         onParameterChangeStub: onParameterChangeStub
                     }

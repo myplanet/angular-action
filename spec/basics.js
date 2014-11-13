@@ -12,8 +12,8 @@ describe('angular-action do directive', function () {
         var dom = angular.element(
             '<div do="actionStub($data)" then="postActionStub($data)">' +
             '<span><!-- content scope outside of parameters --></span>' +
-            '<div parameter="TEST_PARAM_A" value="\'INIT_VALUE\'"><span><!-- parameter scope --></span></div>' +
-            '<div parameter="TEST_PARAM_B"><span><!-- parameter scope --></span></div>' +
+            '<div parameter="TEST_PARAM_A" collect value="\'INIT_VALUE\'"><span><!-- parameter scope --></span></div>' +
+            '<div parameter="TEST_PARAM_B" collect><span><!-- parameter scope --></span></div>' +
             '</div>'
         );
 
