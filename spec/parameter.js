@@ -160,38 +160,6 @@ describe('angular-action parameter directive', function () {
         });
     });
 
-    describe('on-parameter-change attribute', function () {
-        describe('when an expression is supplied', function () {
-            var onParameterChangeStub;
-
-            beforeEach(function () {
-                onParameterChangeStub = jasmine.createSpy('onParameterChangeStub');
-
-                compile(
-                    '<div parameter="TEST_PARAM" value="\'INIT_VALUE\'" collect on-parameter-change="onParameterChangeStub($value)"><span><!-- parameter scope --></span></div>',
-                    {
-                        onParameterChangeStub: onParameterChangeStub
-                    }
-                );
-            });
-
-            it('the expression in the attribute value is not initially evaluated', function () {
-                expect(onParameterChangeStub).not.toHaveBeenCalled();
-            });
-
-            describe('when the value changes', function () {
-                beforeEach(function () {
-                    paramScope.$actionData.value = 'NEW_VALUE';
-                    paramScope.$digest();
-                });
-
-                it('the expression in the attribute value is evaluated with local variable $value having the new value', function () {
-                    expect(onParameterChangeStub).toHaveBeenCalledWith('NEW_VALUE');
-                });
-            });
-        });
-    });
-
     describe('when $actionReset event received', function () {
         beforeEach(function () {
             angular.module('throwsException', []).filter('throwsException', function () {

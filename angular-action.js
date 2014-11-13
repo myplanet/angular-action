@@ -86,20 +86,9 @@
                             value: childScope.$parent.$eval($attr.value),
                             error: null
                         },
-                        collectExpr = $attr.collect,
-                        onChangeExpr = $attr.onParameterChange;
+                        collectExpr = $attr.collect;
 
                     childScope.$actionData = state;
-
-                    if (onChangeExpr) {
-                        childScope.$watch(function () {
-                            return state.value;
-                        }, function (newVal, oldVal) {
-                            if (newVal !== oldVal) {
-                                childScope.$eval(onChangeExpr, { $value: state.value });
-                            }
-                        });
-                    }
 
                     // report latest value before submitting
                     childScope.$on('$actionCollecting', function (event, reportValue, reportError) {
