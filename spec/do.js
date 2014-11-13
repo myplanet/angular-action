@@ -64,6 +64,17 @@ describe('angular-action do directive', function () {
         });
     });
 
+    it('does not invoke the action expression when parameter collection encounters an error', function () {
+        paramScope.$on('$actionCollecting', function (evt, reportValue, reportError) {
+            reportValue('TEST_PARAM_A', 'VALUE_A');
+            reportError();
+        });
+
+        contentScope.$apply(function () { contentScope.$actionInvoke(); });
+
+        expect(actionStub).not.toHaveBeenCalled();
+    });
+
     describe('invoked with a promised action', function () {
         var testActionResult;
 
