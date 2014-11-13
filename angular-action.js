@@ -100,6 +100,8 @@
 
                     // report latest value before submitting
                     childScope.$on('$actionCollecting', function (event, reportValue, reportError) {
+                        state.error = null;
+
                         var collectValue;
 
                         if (collectExpr) {

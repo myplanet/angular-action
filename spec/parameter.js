@@ -74,6 +74,10 @@ describe('angular-action parameter directive', function () {
         it('does not call the error callback', function () {
             expect(reportErrorStub).not.toHaveBeenCalled();
         });
+
+        it('defines scope "$actionData" error as null', function () {
+            expect(paramScope.$actionData.error).toBe(null);
+        });
     });
 
     describe('collect attribute', function () {
@@ -100,19 +104,25 @@ describe('angular-action parameter directive', function () {
                 it('does not call the error callback', function () {
                     expect(reportErrorStub).not.toHaveBeenCalled();
                 });
+
+                it('defines scope "$actionData" error as null', function () {
+                    expect(paramScope.$actionData.error).toBe(null);
+                });
             });
 
             describe('when one of the filters causes an exception', function () {
                 var reportValueStub,
-                    reportErrorStub;
+                    reportErrorStub,
+                    exception;
 
                 beforeEach(function () {
                     reportValueStub = jasmine.createSpy('reportValueStub');
                     reportErrorStub = jasmine.createSpy('reportErrorStub');
+                    exception = new Error('TEST');
 
                     angular.module('throwsException', []).filter('throwsException', function () {
                         return function () {
-                            throw new Error('TEST');
+                            throw exception;
                         }
                     });
 
@@ -131,6 +141,10 @@ describe('angular-action parameter directive', function () {
 
                 it('calls the error callback with the parameter name and the exception', function () {
                     expect(reportErrorStub).toHaveBeenCalled();
+                });
+
+                it('defines scope "$actionData" error as the exception that was thrown', function () {
+                    expect(paramScope.$actionData.error).toBe(exception);
                 });
             });
         });
@@ -166,5 +180,9 @@ describe('angular-action parameter directive', function () {
                 });
             });
         });
+    });
+
+    describe('when $actionReset event received', function () {
+        // @todo
     });
 });
