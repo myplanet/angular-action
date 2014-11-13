@@ -42,7 +42,12 @@
                             childScope.$actionHasError = true;
                         });
 
-                        return $q.when(childScope.$eval(doExpr, { $data: valueMap })).then(function (data) {
+                        if (childScope.$actionHasError) {
+                            childScope.$actionIsPending = false;
+                            return;
+                        }
+
+                        $q.when(childScope.$eval(doExpr, { $data: valueMap })).then(function (data) {
                             childScope.$actionIsComplete = true;
                             childScope.$actionError = null;
                             childScope.$actionHasError = false;
