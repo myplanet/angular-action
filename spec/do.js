@@ -50,21 +50,19 @@ describe('angular-action do directive', function () {
         expect(postActionStub).toHaveBeenCalledWith('TEST_RESULT');
     });
 
-    // @todo fails. fix.
-    // it('passes collected parameter values to action expression', function () {
-    //     contentScope.$apply(function () { contentScope.$actionInvoke(); });
+    it('passes collected parameter values to action expression', function () {
+        paramScope.$on('$actionCollecting', function (evt, reportValue, reportError) {
+            reportValue('TEST_PARAM_A', 'VALUE_A');
+            reportValue('TEST_PARAM_B', 'VALUE_B');
+        });
 
-    //     paramScope.$on('$actionCollecting', function (evt, reportValue, reportError) {
-    //         console.log('test');
-    //         reportValue('TEST_PARAM_A', 'VALUE_A');
-    //         reportValue('TEST_PARAM_B', 'VALUE_B');
-    //     });
+        contentScope.$apply(function () { contentScope.$actionInvoke(); });
 
-    //     expect(actionStub).toHaveBeenCalledWith({
-    //         TEST_PARAM_A: 'VALUE_A',
-    //         TEST_PARAM_B: 'VALUE_B'
-    //     });
-    // });
+        expect(actionStub).toHaveBeenCalledWith({
+            TEST_PARAM_A: 'VALUE_A',
+            TEST_PARAM_B: 'VALUE_B'
+        });
+    });
 
     describe('invoked with a promised action', function () {
         var testActionResult;
