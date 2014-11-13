@@ -38,6 +38,8 @@
                         // broadcast to collect values from parameters
                         childScope.$broadcast('$actionCollecting', function (key, value) {
                             valueMap[key] = value;
+                        }, function () {
+                            childScope.$actionHasError = true;
                         });
 
                         return $q.when(childScope.$eval(doExpr, { $data: valueMap })).then(function (data) {
@@ -86,25 +88,33 @@
 
                     childScope.$actionData = state;
 
-                    function collect() {
-                        return collectExpr
-                            ? childScope.$parent.$eval('$value | ' + collectExpr, { $value: state.value })
-                            : state.value;
-                    }
-
                     if (onChangeExpr) {
                         childScope.$watch(function () {
                             return state.value;
                         }, function (newVal, oldVal) {
                             if (newVal !== oldVal) {
-                                childScope.$eval(onChangeExpr, { $value: collect() });
+                                childScope.$eval(onChangeExpr, { $value: state.value });
                             }
                         });
                     }
 
                     // report latest value before submitting
-                    childScope.$on('$actionCollecting', function (event, reportValue) {
-                        reportValue(name, collect());
+                    childScope.$on('$actionCollecting', function (event, reportValue, reportError) {
+                        var collectValue;
+
+                        if (collectExpr) {
+                            try {
+                                collectValue = childScope.$parent.$eval('$value | ' + collectExpr, { $value: state.value });
+                            } catch (e) {
+                                state.error = e;
+                                reportError();
+                                return;
+                            }
+                        } else {
+                            collectValue = state.value;
+                        }
+
+                        reportValue(name, collectValue);
                     });
 
                     // re-evaluate source value

@@ -53,84 +53,86 @@ describe('angular-action parameter directive', function () {
     });
 
     describe('when $actionCollecting event received', function () {
-        var setValueStub,
-            flagErrorStub;
+        var reportValueStub,
+            reportErrorStub;
 
         beforeEach(function () {
-            setValueStub = jasmine.createSpy('setValueStub');
-            flagErrorStub = jasmine.createSpy('flagErrorStub');
+            reportValueStub = jasmine.createSpy('reportValueStub');
+            reportErrorStub = jasmine.createSpy('reportErrorStub');
 
             compile(
                 '<div parameter="TEST_PARAM" value="\'INIT_VALUE\'"><span><!-- parameter scope --></span></div>'
             );
 
-            scope.$broadcast('$actionCollecting', setValueStub, flagErrorStub);
+            scope.$broadcast('$actionCollecting', reportValueStub, reportErrorStub);
         });
 
-        it('calls the setter callback with its name and current value', function () {
-            expect(setValueStub).toHaveBeenCalledWith('TEST_PARAM', 'INIT_VALUE');
+        it('calls the setter callback with the parameter name and current value', function () {
+            expect(reportValueStub).toHaveBeenCalledWith('TEST_PARAM', 'INIT_VALUE');
         });
 
         it('does not call the error callback', function () {
-            expect(flagErrorStub).not.toHaveBeenCalled();
+            expect(reportErrorStub).not.toHaveBeenCalled();
         });
     });
 
     describe('collect attribute', function () {
         describe('when a filter expression is supplied', function () {
             describe('when none of the filters cause an exception', function () {
-                var setValueStub,
-                    flagErrorStub;
+                var reportValueStub,
+                    reportErrorStub;
 
                 beforeEach(function () {
-                    setValueStub = jasmine.createSpy('setValueStub');
-                    flagErrorStub = jasmine.createSpy('flagErrorStub');
+                    reportValueStub = jasmine.createSpy('reportValueStub');
+                    reportErrorStub = jasmine.createSpy('reportErrorStub');
 
                     compile(
                         '<div parameter="TEST_PARAM" value="\'INIT_VALUE\'" collect="lowercase"><span><!-- parameter scope --></span></div>'
                     );
 
-                    scope.$broadcast('$actionCollecting', setValueStub);
+                    scope.$broadcast('$actionCollecting', reportValueStub, reportErrorStub);
                 });
 
                 it('calls the setter callback with the current value after passing it through the filters', function () {
-                    expect(setValueStub).toHaveBeenCalledWith('TEST_PARAM', 'init_value');
+                    expect(reportValueStub).toHaveBeenCalledWith('TEST_PARAM', 'init_value');
                 });
 
                 it('does not call the error callback', function () {
-                    expect(flagErrorStub).not.toHaveBeenCalled();
+                    expect(reportErrorStub).not.toHaveBeenCalled();
                 });
             });
 
-            // describe('when one of the filters causes an exception', function () {
-            //     var setValueStub,
-            //         flagErrorStub,
-            //         exception;
+            describe('when one of the filters causes an exception', function () {
+                var reportValueStub,
+                    reportErrorStub;
 
-            //     beforeEach(inject(function ($filterProvider) {
-            //         setValueStub = jasmine.createSpy('setValueStub');
-            //         flagErrorStub = jasmine.createSpy('flagErrorStub');
-            //         exception = new Error();
+                beforeEach(function () {
+                    reportValueStub = jasmine.createSpy('reportValueStub');
+                    reportErrorStub = jasmine.createSpy('reportErrorStub');
 
-            //         $filterProvider.register('throwsException', function () {
-            //             throw exception;
-            //         });
+                    angular.module('throwsException', []).filter('throwsException', function () {
+                        return function () {
+                            throw new Error('TEST');
+                        }
+                    });
 
-            //         compile(
-            //             '<div parameter="TEST_PARAM" value="\'INIT_VALUE\'" collect="lowercase | throwsException"><span><!-- parameter scope --></span></div>'
-            //         );
+                    module('throwsException');
 
-            //         scope.$broadcast('$actionCollecting', setValueStub);
-            //     }));
+                    compile(
+                        '<div parameter="TEST_PARAM" value="\'INIT_VALUE\'" collect="lowercase | throwsException"><span><!-- parameter scope --></span></div>'
+                    );
 
-            //     it('does not call the setter callback', function () {
-            //         expect(setValueStub).not.toHaveBeenCalled();
-            //     });
+                    scope.$broadcast('$actionCollecting', reportValueStub, reportErrorStub);
+                });
 
-            //     it('calls the error callback with the exception', function () {
-            //         expect(flagErrorStub).toHaveBeenCalledWith(exception);
-            //     });
-            // });
+                it('does not call the setter callback', function () {
+                    expect(reportValueStub).not.toHaveBeenCalled();
+                });
+
+                it('calls the error callback with the parameter name and the exception', function () {
+                    expect(reportErrorStub).toHaveBeenCalled();
+                });
+            });
         });
     });
 
