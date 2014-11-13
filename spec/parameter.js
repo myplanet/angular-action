@@ -183,6 +183,33 @@ describe('angular-action parameter directive', function () {
     });
 
     describe('when $actionReset event received', function () {
-        // @todo
+        beforeEach(function () {
+            angular.module('throwsException', []).filter('throwsException', function () {
+                return function () {
+                    throw new Error('TEST');
+                }
+            });
+
+            module('throwsException');
+
+            compile(
+                '<div parameter="TEST_PARAM" value="\'INIT_VALUE\'" collect="throwsException"><span><!-- parameter scope --></span></div>'
+            );
+
+            paramScope.$actionData.value = 'NEW_VALUE';
+            paramScope.$digest();
+
+            scope.$broadcast('$actionCollecting', function () {}, function () {});
+
+            scope.$broadcast('$actionReset');
+        });
+
+        it('defines scope "$actionData" value using initial value', function () {
+            expect(paramScope.$actionData.value).toBe('INIT_VALUE');
+        });
+
+        it('defines scope "$actionData" error as null', function () {
+            expect(paramScope.$actionData.error).toBe(null);
+        });
     });
 });
