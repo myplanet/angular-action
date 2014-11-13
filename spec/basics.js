@@ -27,9 +27,8 @@ describe('angular-action do directive', function () {
 
     it('defines scope "$action" state properties', function () {
         expect(contentScope.$actionIsPending).toBe(false);
-        expect(contentScope.$actionIsComplete).toBe(false);
         expect(contentScope.$actionError).toBe(null);
-        expect(contentScope.$actionHasError).toBe(false);
+        expect(contentScope.$actionFailed).toBe(false);
         expect(contentScope.$actionInvoke).toEqual(jasmine.any(Function));
         expect(contentScope.$actionReset).toEqual(jasmine.any(Function));
     });
@@ -45,9 +44,8 @@ describe('angular-action do directive', function () {
         contentScope.$apply(function () { contentScope.$actionInvoke(); });
 
         expect(contentScope.$actionIsPending).toBe(false);
-        expect(contentScope.$actionIsComplete).toBe(true);
         expect(contentScope.$actionError).toBe(null);
-        expect(contentScope.$actionHasError).toBe(false);
+        expect(contentScope.$actionFailed).toBe(false);
 
         expect(paramAScope.$actionData.error).toBe(null);
         expect(paramBScope.$actionData.error).toBe(null);
@@ -97,18 +95,16 @@ describe('angular-action do directive', function () {
 
         it('updates action pending state', function () {
             expect(contentScope.$actionIsPending).toBe(true);
-            expect(contentScope.$actionIsComplete).toBe(false);
             expect(contentScope.$actionError).toBe(null);
-            expect(contentScope.$actionHasError).toBe(false);
+            expect(contentScope.$actionFailed).toBe(false);
         });
 
         it('updates action error state on simple error', function () {
             contentScope.$apply(function () { testActionResult.reject('SIMPLE_ERROR'); });
 
             expect(contentScope.$actionIsPending).toBe(false);
-            expect(contentScope.$actionIsComplete).toBe(false);
             expect(contentScope.$actionError).toBe('SIMPLE_ERROR');
-            expect(contentScope.$actionHasError).toBe(true);
+            expect(contentScope.$actionFailed).toBe(true);
 
             expect(paramAScope.$actionData.error).toBe(null);
             expect(paramBScope.$actionData.error).toBe(null);
@@ -118,9 +114,8 @@ describe('angular-action do directive', function () {
             contentScope.$apply(function () { testActionResult.reject({ error: 'COMPLEX_ERROR' }); });
 
             expect(contentScope.$actionIsPending).toBe(false);
-            expect(contentScope.$actionIsComplete).toBe(false);
             expect(contentScope.$actionError).toEqual({ error: 'COMPLEX_ERROR' });
-            expect(contentScope.$actionHasError).toBe(true);
+            expect(contentScope.$actionFailed).toBe(true);
 
             expect(paramAScope.$actionData.error).toBe(null);
             expect(paramBScope.$actionData.error).toBe(null);
@@ -140,9 +135,8 @@ describe('angular-action do directive', function () {
             expect(secondAction).toHaveBeenCalled();
 
             expect(contentScope.$actionIsPending).toBe(false);
-            expect(contentScope.$actionIsComplete).toBe(true);
             expect(contentScope.$actionError).toBe(null);
-            expect(contentScope.$actionHasError).toBe(false);
+            expect(contentScope.$actionFailed).toBe(false);
 
             expect(paramAScope.$actionData.error).toBe(null);
             expect(paramBScope.$actionData.error).toBe(null);
@@ -160,9 +154,8 @@ describe('angular-action do directive', function () {
             expect(secondAction).toHaveBeenCalled();
 
             expect(contentScope.$actionIsPending).toBe(true);
-            expect(contentScope.$actionIsComplete).toBe(false);
             expect(contentScope.$actionError).toBe('ERROR');
-            expect(contentScope.$actionHasError).toBe(true);
+            expect(contentScope.$actionFailed).toBe(true);
 
             expect(paramAScope.$actionData.error).toBe(null);
             expect(paramBScope.$actionData.error).toBe(null);

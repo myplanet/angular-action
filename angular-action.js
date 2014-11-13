@@ -25,13 +25,11 @@
                         thenExpr = $attr.then;
 
                     childScope.$actionIsPending = false;
-                    childScope.$actionIsComplete = false;
                     childScope.$actionError = null;
-                    childScope.$actionHasError = false;
+                    childScope.$actionFailed = false;
 
                     childScope.$actionInvoke = function () {
                         childScope.$actionIsPending = true;
-                        childScope.$actionIsComplete = false; // reset back if reusing the form
 
                         var valueMap = {};
 
@@ -39,23 +37,22 @@
                         childScope.$broadcast('$actionCollecting', function (key, value) {
                             valueMap[key] = value;
                         }, function () {
-                            childScope.$actionHasError = true;
+                            childScope.$actionFailed = true;
                         });
 
-                        if (childScope.$actionHasError) {
+                        if (childScope.$actionFailed) {
                             childScope.$actionIsPending = false;
                             return;
                         }
 
                         $q.when(childScope.$eval(doExpr, { $data: valueMap })).then(function (data) {
-                            childScope.$actionIsComplete = true;
                             childScope.$actionError = null;
-                            childScope.$actionHasError = false;
+                            childScope.$actionFailed = false;
 
                             childScope.$eval(thenExpr, { $data: data });
                         }, function (data) {
                             childScope.$actionError = data;
-                            childScope.$actionHasError = true;
+                            childScope.$actionFailed = true;
                         })['finally'](function () {
                             childScope.$actionIsPending = false;
                         });
@@ -68,9 +65,8 @@
                         }
 
                         childScope.$actionIsPending = false;
-                        childScope.$actionIsComplete = false; // reset back if reusing the form
                         childScope.$actionError = null;
-                        childScope.$actionHasError = false;
+                        childScope.$actionFailed = false;
 
                         childScope.$broadcast('$actionReset');
                     };
