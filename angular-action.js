@@ -25,7 +25,6 @@
                         thenExpr = $attr.then;
 
                     childScope.$actionIsPending = false;
-                    childScope.$actionError = null;
                     childScope.$actionFailed = false;
 
                     childScope.$actionInvoke = function () {
@@ -46,12 +45,10 @@
                         }
 
                         $q.when(childScope.$eval(doExpr, { $data: valueMap })).then(function (data) {
-                            childScope.$actionError = null;
                             childScope.$actionFailed = false;
 
                             childScope.$eval(thenExpr, { $data: data });
-                        }, function (data) {
-                            childScope.$actionError = data;
+                        }, function () {
                             childScope.$actionFailed = true;
                         })['finally'](function () {
                             childScope.$actionIsPending = false;
@@ -65,7 +62,6 @@
                         }
 
                         childScope.$actionIsPending = false;
-                        childScope.$actionError = null;
                         childScope.$actionFailed = false;
 
                         childScope.$broadcast('$actionReset');
