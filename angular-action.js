@@ -30,17 +30,19 @@
                     childScope.$actionInvoke = function () {
                         childScope.$actionIsPending = true;
 
-                        var valueMap = {};
+                        var valueMap = {},
+                            collectionFailed = false;
 
                         // broadcast to collect values from parameters
                         childScope.$broadcast('$actionCollecting', function (key, value) {
                             valueMap[key] = value;
                         }, function () {
-                            childScope.$actionFailed = true;
+                            collectionFailed = true;
                         });
 
-                        if (childScope.$actionFailed) {
+                        if (collectionFailed) {
                             childScope.$actionIsPending = false;
+                            childScope.$actionFailed = true;
                             return;
                         }
 
