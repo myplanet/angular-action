@@ -77,7 +77,7 @@
                 restrict: 'A',
                 scope: true,
 
-                controller: [ '$scope', '$element', '$attrs', '$q', function (childScope, $element, $attr, $q) {
+                controller: [ '$scope', '$element', '$attrs', function (childScope, $element, $attr) {
                     var name = $attr.parameter,
                         state = {
                             value: childScope.$parent.$eval($attr.value),
