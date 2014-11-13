@@ -15,47 +15,45 @@
 
     return angular.module('mp.action', [])
         .directive('do', function () {
-            function thenify(v) {
-                if (v && typeof v.then === 'function') {
-                    return v;
-                }
-
-                return { then: function (callback) { callback(v); } };
-            }
-
             return {
                 restrict: 'A',
                 scope: true,
 
                 // @todo eliminate the "then" attribute and just chain promises elsewhere
-                controller: [ '$scope', '$element', '$attrs', function (childScope, $element, $attr) {
+                controller: [ '$scope', '$element', '$attrs', '$q', function (childScope, $element, $attr, $q) {
                     var doExpr = $attr['do'],
                         thenExpr = $attr.then;
 
                     childScope.$actionIsPending = false;
-                    childScope.$actionIsComplete = false;
-                    childScope.$actionError = null;
-                    childScope.$actionHasError = false;
+                    childScope.$actionFailed = false;
+
                     childScope.$actionInvoke = function () {
-                        var valueMap = {};
-
                         childScope.$actionIsPending = true;
-                        childScope.$actionIsComplete = false; // reset back if reusing the form
 
-                        // broadcast submit to collect values from parameters
-                        childScope.$broadcast('$actionSubmitting', valueMap);
+                        var valueMap = {},
+                            collectionFailed = false;
 
-                        thenify(childScope.$eval(doExpr, { data: valueMap })).then(function (data) {
+                        // broadcast to collect values from parameters
+                        childScope.$broadcast('$actionCollecting', function (key, value) {
+                            valueMap[key] = value;
+                        }, function () {
+                            collectionFailed = true;
+                        });
+
+                        if (collectionFailed) {
                             childScope.$actionIsPending = false;
-                            childScope.$actionIsComplete = true;
-                            childScope.$actionError = null;
-                            childScope.$actionHasError = false;
+                            childScope.$actionFailed = true;
+                            return;
+                        }
 
-                            childScope.$eval(thenExpr, { value: data });
-                        }, function (error) {
+                        $q.when(childScope.$eval(doExpr, { $data: valueMap })).then(function (data) {
+                            childScope.$actionFailed = false;
+
+                            childScope.$eval(thenExpr, { $data: data });
+                        }, function () {
+                            childScope.$actionFailed = true;
+                        })['finally'](function () {
                             childScope.$actionIsPending = false;
-                            childScope.$actionError = error;
-                            childScope.$actionHasError = true;
                         });
                     };
 
@@ -66,9 +64,7 @@
                         }
 
                         childScope.$actionIsPending = false;
-                        childScope.$actionIsComplete = false; // reset back if reusing the form
-                        childScope.$actionError = null;
-                        childScope.$actionHasError = false;
+                        childScope.$actionFailed = false;
 
                         childScope.$broadcast('$actionReset');
                     };
@@ -85,22 +81,41 @@
                         state = {
                             value: childScope.$parent.$eval($attr.value),
                             error: null
-                        };
+                        },
+                        collectExpr = $attr.collect,
+                        onChangeExpr = $attr.onParameterChange;
 
-                    childScope.$actionParameter = state;
-
-                    // expose live changes to parameter value
-                    var onChangeExpr = $attr.onParameterChange;
+                    childScope.$actionData = state;
 
                     if (onChangeExpr) {
-                        childScope.$watch(function () { return state.value; }, function (value) {
-                            childScope.$eval(onChangeExpr, { value: value });
+                        childScope.$watch(function () {
+                            return state.value;
+                        }, function (newVal, oldVal) {
+                            if (newVal !== oldVal) {
+                                childScope.$eval(onChangeExpr, { $value: state.value });
+                            }
                         });
                     }
 
                     // report latest value before submitting
-                    childScope.$on('$actionSubmitting', function (event, valueMap) {
-                        valueMap[name] = state.value;
+                    childScope.$on('$actionCollecting', function (event, reportValue, reportError) {
+                        state.error = null;
+
+                        var collectValue;
+
+                        if (collectExpr) {
+                            try {
+                                collectValue = childScope.$parent.$eval('$value | ' + collectExpr, { $value: state.value });
+                            } catch (e) {
+                                state.error = e;
+                                reportError();
+                                return;
+                            }
+                        } else {
+                            collectValue = state.value;
+                        }
+
+                        reportValue(name, collectValue);
                     });
 
                     // re-evaluate source value

@@ -1,5 +1,5 @@
 describe('angular-action do directive', function () {
-    var scope, contentScope, paramAScope, paramBScope, actionStub, postActionStub;
+    var scope, contentScope, paramScope, actionStub, postActionStub;
 
     beforeEach(module('mp.action'));
 
@@ -11,9 +11,7 @@ describe('angular-action do directive', function () {
 
         var dom = angular.element(
             '<div do="actionStub($data)" then="postActionStub($data)">' +
-            '<span><!-- content scope outside of parameters --></span>' +
-            '<div parameter="TEST_PARAM_A" value="\'INIT_VALUE\'"><span><!-- parameter scope --></span></div>' +
-            '<div parameter="TEST_PARAM_B"><span><!-- parameter scope --></span></div>' +
+            '<div><span><!-- parameter scope --></span></div>' +
             '</div>'
         );
 
@@ -21,8 +19,7 @@ describe('angular-action do directive', function () {
         scope.$digest();
 
         contentScope = dom.children().eq(0).scope();
-        paramAScope = dom.children().eq(1).children().eq(0).scope();
-        paramBScope = dom.children().eq(2).children().eq(0).scope();
+        paramScope = dom.children().eq(0).children().eq(0).scope();
     }));
 
     it('defines scope "$action" state properties', function () {
@@ -44,9 +41,6 @@ describe('angular-action do directive', function () {
 
         expect(contentScope.$actionIsPending).toBe(false);
         expect(contentScope.$actionFailed).toBe(false);
-
-        expect(paramAScope.$actionData.error).toBe(null);
-        expect(paramBScope.$actionData.error).toBe(null);
     });
 
     it('invokes "then" expression after success', function () {
@@ -56,29 +50,29 @@ describe('angular-action do directive', function () {
         expect(postActionStub).toHaveBeenCalledWith('TEST_RESULT');
     });
 
-    it('tracks individual parameter state objects separately', function () {
-        expect(paramAScope.$actionData).not.toBe(paramBScope.$actionData);
-    });
+    it('passes collected parameter values to action expression', function () {
+        paramScope.$on('$actionCollecting', function (evt, reportValue, reportError) {
+            reportValue('TEST_PARAM_A', 'VALUE_A');
+            reportValue('TEST_PARAM_B', 'VALUE_B');
+        });
 
-    it('passes initial parameter value to action expression', function () {
         contentScope.$apply(function () { contentScope.$actionInvoke(); });
 
-        expect(actionStub).toHaveBeenCalledWith({ TEST_PARAM_A: 'INIT_VALUE' });
+        expect(actionStub).toHaveBeenCalledWith({
+            TEST_PARAM_A: 'VALUE_A',
+            TEST_PARAM_B: 'VALUE_B'
+        });
     });
 
-    it('passes latest parameter value to action expression', function () {
-        paramAScope.$actionData.value = 'LATEST_VALUE';
+    it('does not invoke the action expression when parameter collection encounters an error', function () {
+        paramScope.$on('$actionCollecting', function (evt, reportValue, reportError) {
+            reportValue('TEST_PARAM_A', 'VALUE_A');
+            reportError();
+        });
+
         contentScope.$apply(function () { contentScope.$actionInvoke(); });
 
-        expect(actionStub).toHaveBeenCalledWith({ TEST_PARAM_A: 'LATEST_VALUE' });
-    });
-
-    it('defines scope "$actionData" value using initial value', function () {
-        expect(paramAScope.$actionData.value).toBe('INIT_VALUE');
-    });
-
-    it('defines scope "$actionData" error as null', function () {
-        expect(paramAScope.$actionData.error).toBe(null);
+        expect(actionStub).not.toHaveBeenCalled();
     });
 
     describe('invoked with a promised action', function () {
@@ -101,9 +95,6 @@ describe('angular-action do directive', function () {
 
             expect(contentScope.$actionIsPending).toBe(false);
             expect(contentScope.$actionFailed).toBe(true);
-
-            expect(paramAScope.$actionData.error).toBe(null);
-            expect(paramBScope.$actionData.error).toBe(null);
         });
 
         it('updates action state on success, clearing old errors', inject(function ($q) {
@@ -121,9 +112,6 @@ describe('angular-action do directive', function () {
 
             expect(contentScope.$actionIsPending).toBe(false);
             expect(contentScope.$actionFailed).toBe(false);
-
-            expect(paramAScope.$actionData.error).toBe(null);
-            expect(paramBScope.$actionData.error).toBe(null);
         }));
 
         it('preserves old errors during resubmitting', inject(function ($q) {
@@ -139,9 +127,6 @@ describe('angular-action do directive', function () {
 
             expect(contentScope.$actionIsPending).toBe(true);
             expect(contentScope.$actionFailed).toBe(true);
-
-            expect(paramAScope.$actionData.error).toBe(null);
-            expect(paramBScope.$actionData.error).toBe(null);
         }));
     });
 });
