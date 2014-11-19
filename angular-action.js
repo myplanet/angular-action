@@ -22,51 +22,51 @@
                 // @todo eliminate the "then" attribute and just chain promises elsewhere
                 controller: [ '$scope', '$element', '$attrs', '$q', function (childScope, $element, $attr, $q) {
                     var doExpr = $attr['do'],
-                        thenExpr = $attr.then;
+                        thenExpr = $attr.then,
+                        action;
 
-                    childScope.$actionIsPending = false;
-                    childScope.$actionFailed = false;
+                    childScope.$action = action = {
+                        isPending: false,
+                        error: null,
 
-                    childScope.$actionInvoke = function () {
-                        childScope.$actionIsPending = true;
+                        invoke: function () {
+                            action.isPending = true;
+                            action.error = null;
 
-                        var valueMap = {},
-                            collectionFailed = false;
+                            var valueMap = {},
+                                collectionFailed = false;
 
-                        // broadcast to collect values from parameters
-                        childScope.$broadcast('$actionCollecting', function (key, value) {
-                            valueMap[key] = value;
-                        }, function () {
-                            collectionFailed = true;
-                        });
+                            // broadcast to collect values from parameters
+                            childScope.$broadcast('$actionCollecting', function (key, value) {
+                                valueMap[key] = value;
+                            }, function () {
+                                collectionFailed = true;
+                            });
 
-                        if (collectionFailed) {
-                            childScope.$actionIsPending = false;
-                            childScope.$actionFailed = true;
-                            return;
+                            if (collectionFailed) {
+                                action.isPending = false;
+                                return;
+                            }
+
+                            $q.when(childScope.$eval(doExpr, { $data: valueMap })).then(function (data) {
+                                childScope.$eval(thenExpr, { $data: data });
+                            }, function (error) {
+                                action.error = error;
+                            })['finally'](function () {
+                                action.isPending = false;
+                            });
+                        },
+
+                        reset: function () {
+                            // only reset if not already pending
+                            if (action.isPending) {
+                                throw new Error('cannot reset pending action');
+                            }
+
+                            action.error = null;
+
+                            childScope.$broadcast('$actionReset');
                         }
-
-                        $q.when(childScope.$eval(doExpr, { $data: valueMap })).then(function (data) {
-                            childScope.$actionFailed = false;
-
-                            childScope.$eval(thenExpr, { $data: data });
-                        }, function () {
-                            childScope.$actionFailed = true;
-                        })['finally'](function () {
-                            childScope.$actionIsPending = false;
-                        });
-                    };
-
-                    childScope.$actionReset = function () {
-                        // only reset if not already pending
-                        if (childScope.$actionIsPending) {
-                            throw new Error('cannot reset pending action');
-                        }
-
-                        childScope.$actionIsPending = false;
-                        childScope.$actionFailed = false;
-
-                        childScope.$broadcast('$actionReset');
                     };
                 } ]
             };

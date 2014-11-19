@@ -26,24 +26,24 @@ describe('angular-action do directive', function () {
     }));
 
     it('defines scope "$action" state properties', function () {
-        expect(contentScope.$actionIsPending).toBe(false);
-        expect(contentScope.$actionFailed).toBe(false);
-        expect(contentScope.$actionInvoke).toEqual(jasmine.any(Function));
-        expect(contentScope.$actionReset).toEqual(jasmine.any(Function));
+        expect(contentScope.$action.isPending).toBe(false);
+        expect(contentScope.$action.error).toBe(null);
+        expect(contentScope.$action.invoke).toEqual(jasmine.any(Function));
+        expect(contentScope.$action.reset).toEqual(jasmine.any(Function));
     });
 
-    it('invokes the action expression when "$actionInvoke" is called', function () {
-        contentScope.$apply(function () { contentScope.$actionInvoke(); });
+    it('invokes the action expression when "$action.invoke" is called', function () {
+        contentScope.$apply(function () { contentScope.$action.invoke(); });
 
         expect(actionStub).toHaveBeenCalled();
     });
 
     it('handles non-thenable values returned by action expression', function () {
         actionStub.andReturn('SIMPLE_VALUE');
-        contentScope.$apply(function () { contentScope.$actionInvoke(); });
+        contentScope.$apply(function () { contentScope.$action.invoke(); });
 
-        expect(contentScope.$actionIsPending).toBe(false);
-        expect(contentScope.$actionFailed).toBe(false);
+        expect(contentScope.$action.isPending).toBe(false);
+        expect(contentScope.$action.error).toBe(null);
 
         expect(paramAScope.$actionData.error).toBe(null);
         expect(paramBScope.$actionData.error).toBe(null);
@@ -51,7 +51,7 @@ describe('angular-action do directive', function () {
 
     it('invokes "then" expression after success', function () {
         actionStub.andReturn('TEST_RESULT');
-        contentScope.$apply(function () { contentScope.$actionInvoke(); });
+        contentScope.$apply(function () { contentScope.$action.invoke(); });
 
         expect(postActionStub).toHaveBeenCalledWith('TEST_RESULT');
     });
@@ -61,14 +61,14 @@ describe('angular-action do directive', function () {
     });
 
     it('passes initial parameter value to action expression', function () {
-        contentScope.$apply(function () { contentScope.$actionInvoke(); });
+        contentScope.$apply(function () { contentScope.$action.invoke(); });
 
         expect(actionStub).toHaveBeenCalledWith({ TEST_PARAM_A: 'INIT_VALUE' });
     });
 
     it('passes latest parameter value to action expression', function () {
         paramAScope.$actionData.value = 'LATEST_VALUE';
-        contentScope.$apply(function () { contentScope.$actionInvoke(); });
+        contentScope.$apply(function () { contentScope.$action.invoke(); });
 
         expect(actionStub).toHaveBeenCalledWith({ TEST_PARAM_A: 'LATEST_VALUE' });
     });
@@ -88,19 +88,19 @@ describe('angular-action do directive', function () {
             testActionResult = $q.defer();
             actionStub.andReturn(testActionResult.promise);
 
-            contentScope.$apply(function () { contentScope.$actionInvoke(); });
+            contentScope.$apply(function () { contentScope.$action.invoke(); });
         }));
 
         it('updates action pending state', function () {
-            expect(contentScope.$actionIsPending).toBe(true);
-            expect(contentScope.$actionFailed).toBe(false);
+            expect(contentScope.$action.isPending).toBe(true);
+            expect(contentScope.$action.error).toBe(null);
         });
 
         it('updates action error state on error', function () {
             contentScope.$apply(function () { testActionResult.reject('ERROR'); });
 
-            expect(contentScope.$actionIsPending).toBe(false);
-            expect(contentScope.$actionFailed).toBe(true);
+            expect(contentScope.$action.isPending).toBe(false);
+            expect(contentScope.$action.error).toBe('ERROR');
 
             expect(paramAScope.$actionData.error).toBe(null);
             expect(paramBScope.$actionData.error).toBe(null);
@@ -113,32 +113,32 @@ describe('angular-action do directive', function () {
             contentScope.$apply(function () { testActionResult.reject('ERROR'); });
 
             scope.actionStub = secondAction;
-            contentScope.$apply(function () { contentScope.$actionInvoke(); });
+            contentScope.$apply(function () { contentScope.$action.invoke(); });
 
             contentScope.$apply(function () { secondActionResult.resolve('SUCCESS'); });
 
             expect(secondAction).toHaveBeenCalled();
 
-            expect(contentScope.$actionIsPending).toBe(false);
-            expect(contentScope.$actionFailed).toBe(false);
+            expect(contentScope.$action.isPending).toBe(false);
+            expect(contentScope.$action.error).toBe(null);
 
             expect(paramAScope.$actionData.error).toBe(null);
             expect(paramBScope.$actionData.error).toBe(null);
         }));
 
-        it('preserves old errors during resubmitting', inject(function ($q) {
+        it('resets old errors during resubmitting', inject(function ($q) {
             var secondActionResult = $q.defer();
             var secondAction = jasmine.createSpy('second action').andReturn(secondActionResult.promise);
 
             contentScope.$apply(function () { testActionResult.reject('ERROR'); });
 
             scope.actionStub = secondAction;
-            contentScope.$apply(function () { contentScope.$actionInvoke(); });
+            contentScope.$apply(function () { contentScope.$action.invoke(); });
 
             expect(secondAction).toHaveBeenCalled();
 
-            expect(contentScope.$actionIsPending).toBe(true);
-            expect(contentScope.$actionFailed).toBe(true);
+            expect(contentScope.$action.isPending).toBe(true);
+            expect(contentScope.$action.error).toBe(null);
 
             expect(paramAScope.$actionData.error).toBe(null);
             expect(paramBScope.$actionData.error).toBe(null);
