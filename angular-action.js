@@ -22,15 +22,16 @@
                 // @todo eliminate the "then" attribute and just chain promises elsewhere
                 controller: [ '$scope', '$element', '$attrs', '$q', function (childScope, $element, $attr, $q) {
                     var doExpr = $attr['do'],
-                        thenExpr = $attr.then;
+                        thenExpr = $attr.then,
+                        action;
 
-                    childScope.$action = {
+                    childScope.$action = action = {
                         isPending: false,
                         error: null,
 
                         invoke: function () {
-                            childScope.$action.isPending = true;
-                            childScope.$action.error = null;
+                            action.isPending = true;
+                            action.error = null;
 
                             var valueMap = {},
                                 collectionFailed = false;
@@ -43,26 +44,26 @@
                             });
 
                             if (collectionFailed) {
-                                childScope.$action.isPending = false;
+                                action.isPending = false;
                                 return;
                             }
 
                             $q.when(childScope.$eval(doExpr, { $data: valueMap })).then(function (data) {
                                 childScope.$eval(thenExpr, { $data: data });
                             }, function (error) {
-                                childScope.$action.error = error;
+                                action.error = error;
                             })['finally'](function () {
-                                childScope.$action.isPending = false;
+                                action.isPending = false;
                             });
                         },
 
                         reset: function () {
                             // only reset if not already pending
-                            if (childScope.$action.isPending) {
+                            if (action.isPending) {
                                 throw new Error('cannot reset pending action');
                             }
 
-                            childScope.$action.error = null;
+                            action.error = null;
 
                             childScope.$broadcast('$actionReset');
                         }
