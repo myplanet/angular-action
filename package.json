@@ -1,6 +1,6 @@
 {
   "name": "angular-action",
-  "version": "0.3.1",
+  "version": "2.0.1",
   "description": "View-model for Angular forms",
   "dependencies": {},
   "devDependencies": {
