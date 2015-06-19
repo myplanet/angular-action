@@ -1,6 +1,6 @@
 {
   "name": "angular-action",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "User-submittable actions - reusable view-model directive",
   "dependencies": {},
   "devDependencies": {
