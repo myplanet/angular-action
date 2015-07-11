@@ -8,7 +8,7 @@
 
         <script src="example.js"></script>
 
-        <main ng-controller="ExamplePage">
+        <article ng-controller="ExamplePage">
             <form ng-submit="startLog(); $action.invoke()" do="exampleAction($data)" then="examplePostAction($data)">
                 <label parameter="someText" value="'Hello, World'" collect="">
                     <input type="text" ng-model="$actionData.value" />
@@ -27,6 +27,6 @@
                     </li>
                 </ul>
             </aside>
-        </main>
+        </article>
     </body>
 </html>
