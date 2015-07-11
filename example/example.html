@@ -19,6 +19,11 @@
                 <ul>
                     <li ng-repeat="item in log">
                         {{ item.message }}
+
+                        <form ng-if="item.collectInput" ng-init="itemInput = ''" ng-submit="item.collectInput(itemInput)">
+                            <input type="text" placeholder="What should it return?" ng-model="itemInput" />
+                            <button type="submit">Continue</button>
+                        </form>
                     </li>
                 </ul>
             </aside>
