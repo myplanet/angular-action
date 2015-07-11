@@ -1,0 +1,15 @@
+<html ng-app="ExampleApp">
+    <body>
+        <script src="../bower_components/angular/angular.js"></script>
+        <script src="../angular-action.js"></script>
+
+        <script src="example.js"></script>
+
+        <div ng-controller="ExamplePage">
+            <form ng-submit="$action.invoke()" do="exampleAction($data)" then="examplePostAction($value)">
+                <input type="text" parameter="someText" placeholder="Enter some text here" collect="" ng-model="$actionData.value" />
+                <button type="submit">Submit Action</button>
+            </form>
+        </div>
+    </body>
+</html>
