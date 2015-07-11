@@ -6,18 +6,24 @@ exampleApp.controller('ExamplePage', function ($scope) {
     $scope.log = [];
 
     $scope.exampleAction = function (data) {
-        $scope.log.push('called action function with: ' + JSON.stringify(data));
+        $scope.log.push({
+            message: 'called action function with: ' + JSON.stringify(data)
+        });
 
         return 'result';
     };
 
     $scope.examplePostAction = function (value) {
-        $scope.log.push('called post-action function with: ' + JSON.stringify(value));
+        $scope.log.push({
+            message: 'called post-action function with: ' + JSON.stringify(value)
+        });
     };
 
     $scope.startLog = function () {
         $scope.log = [];
 
-        $scope.log.push('submitted form');
+        $scope.log.push({
+            message: 'submitted form'
+        });
     };
 });
