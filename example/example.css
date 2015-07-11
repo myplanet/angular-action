@@ -8,12 +8,18 @@
 body {
     font-family: Helvetica, Arial, sans;
     font-size: 16px;
+
+    padding: 20px;
+}
+
+main {
+    width: 810px;
+    margin: auto;
 }
 
 form {
     float: left;
     width: 400px;
-
     padding: 10px;
 }
 
@@ -27,4 +33,13 @@ form button {
     font-size: 24px;
 
     width: 100%;
+}
+
+aside {
+    float: left;
+    width: 400px;
+    min-height: 400px;
+    margin-left: 10px;
+
+    background: #f0f8ff;
 }

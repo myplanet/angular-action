@@ -3,13 +3,21 @@ var exampleApp = angular.module('ExampleApp', [
 ]);
 
 exampleApp.controller('ExamplePage', function ($scope) {
+    $scope.log = [];
+
     $scope.exampleAction = function (data) {
-        console.log('submitting', data);
+        $scope.log.push('called action function with: ' + JSON.stringify(data));
 
         return 'result';
     };
 
     $scope.examplePostAction = function (value) {
-        console.log('post', value);
+        $scope.log.push('called post-action function with: ' + JSON.stringify(value));
+    };
+
+    $scope.startLog = function () {
+        $scope.log = [];
+
+        $scope.log.push('submitted form');
     };
 });

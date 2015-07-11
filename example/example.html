@@ -8,11 +8,20 @@
 
         <script src="example.js"></script>
 
-        <div ng-controller="ExamplePage">
-            <form ng-submit="$action.invoke()" do="exampleAction($data)" then="examplePostAction($value)">
-                <input type="text" parameter="someText" placeholder="Enter some text here" collect="" ng-model="$actionData.value" />
+        <main ng-controller="ExamplePage">
+            <form ng-submit="startLog(); $action.invoke()" do="exampleAction($data)" then="examplePostAction($data)">
+                <label parameter="someText" value="'Hello, World'" collect="">
+                    <input type="text" ng-model="$actionData.value" />
+                </label>
                 <button type="submit" ng-disabled="$action.isPending">Submit Action</button>
             </form>
-        </div>
+            <aside>
+                <ul>
+                    <li ng-repeat="item in log">
+                        {{ item }}
+                    </li>
+                </ul>
+            </aside>
+        </main>
     </body>
 </html>
