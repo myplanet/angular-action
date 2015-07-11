@@ -1,4 +1,5 @@
 var exampleApp = angular.module('ExampleApp', [
+    'ngAnimate',
     'mp.action'
 ]);
 

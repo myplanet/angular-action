@@ -50,6 +50,14 @@ aside form {
     padding: 0px;
 }
 
+aside form.ng-enter {
+    transition: 0.2s opacity;
+    opacity: 0;
+}
+
+aside form.ng-enter.ng-enter-active {
+    opacity: 1;
+}
 aside input,
 aside button {
     width: 300px;
