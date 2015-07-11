@@ -1,0 +1,14 @@
+{
+  "name": "angular-action-example",
+  "private": true,
+  "description": "Example demo code for the angular-action library",
+  "homepage": "https://github.com/myplanet/angular-action",
+  "authors": [
+    "Nick Matantsev <nick.m@myplanet.com>",
+    "Ates Goral <ates.g@myplanet.com>"
+  ],
+  "dependencies": {
+    "angular": ">= 1.2.6"
+  },
+  "license": "MIT"
+}
