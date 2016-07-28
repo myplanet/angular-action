@@ -12,8 +12,7 @@
     "karma": "~0.10.2"
   },
   "scripts": {
-    "postinstall": "./node_modules/.bin/bower install",
-    "test": "./node_modules/.bin/karma start --single-run --browsers PhantomJS"
+    "test": "./node_modules/.bin/bower install && ./node_modules/.bin/karma start --single-run --browsers PhantomJS"
   },
   "license": "MIT",
   "author": "Nick Matantsev <nick.m@myplanet.com>",
