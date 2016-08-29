@@ -83,12 +83,20 @@
                         throw new Error('The collect attribute is mandatory');
                     }
 
-                    var name = $attr.parameter,
+                    var name = null,
                         state = {
                             value: childScope.$parent.$eval($attr.value),
                             error: null
                         },
-                        collectExpr = $attr.collect;
+                        collectExpr = null;
+
+                    $attr.$observe('parameter', function (value) {
+                        name = value;
+                    });
+
+                    $attr.$observe('collect', function (value) {
+                        collectExpr = value;
+                    });
 
                     childScope.$actionData = state;
 
