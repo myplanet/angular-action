@@ -91,10 +91,11 @@
                         collectExpr = null;
 
                     $attr.$observe('parameter', function (value) {
-                        name = value
+                        name = value;
                     });
+
                     $attr.$observe('collect', function (value) {
-                        collectExpr = value
+                        collectExpr = value;
                     });
 
                     childScope.$actionData = state;
