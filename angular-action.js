@@ -97,18 +97,16 @@
                             return;
                         }
 
-                        // check for presence of completed promise, per http://stackoverflow.com/a/24091953
-                        // @todo support async (this is hacky anyway!)
-                        if (!responsePromise.$$state || (responsePromise.$$state.status !== 1 && responsePromise.$$state.status !== 2)) {
+                        // report the resolved promise outcome
+                        // (using sync inspection hack per http://stackoverflow.com/a/24091953 to avoid waiting for an async digest)
+                        // @todo support async (this is super hacky anyway!)
+                        if (responsePromise.$$state && responsePromise.$$state.status === 1) {
+                            reportValue(name, responsePromise.$$state.value);
+                        } else if (responsePromise.$$state && responsePromise.$$state.status === 2) {
+                            reportError(name, responsePromise.$$state.value);
+                        } else {
                             reportError(name, new Error('expecting completed value promise'));
-                            return;
                         }
-
-                        responsePromise.then(function (value) {
-                            reportValue(name, value);
-                        }, function (error) {
-                            reportError(name, error);
-                        });
                     });
                 } ]
             };
@@ -142,13 +140,21 @@
                         currentTrackedErrorPromise = promise;
                         state.error = null;
 
-                        promise['catch'](function (e) {
+                        function onError(e) {
                             if (promise !== currentTrackedErrorPromise) {
                                 return;
                             }
 
                             state.error = e;
-                        });
+                        }
+
+                        // for synchronously resolved promises, report immediately
+                        // @todo remove this hacky workaround eventually
+                        if (promise.$$state && promise.$$state.status === 2) {
+                            onError(promise.$$state.value);
+                        } else {
+                            promise['catch'](onError);
+                        }
                     }
 
                     // report latest value before submitting
@@ -164,9 +170,6 @@
                         event.$actionDataPromiseResponse = deferred.promise;
                         event.preventDefault();
 
-                        // report any error, synchronous or not
-                        trackError(deferred.promise);
-
                         // resolve the value promise
                         if (collectExpr) {
                             try {
@@ -177,6 +180,9 @@
                         } else {
                             deferred.resolve(state.value);
                         }
+
+                        // report any error, synchronous or not
+                        trackError(deferred.promise);
                     });
 
                     // re-evaluate source value
