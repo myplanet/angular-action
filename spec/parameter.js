@@ -83,11 +83,17 @@ describe('angular-action parameter directive', function () {
     describe('collect attribute', function () {
         describe('when not present', function () {
             it('causes an exception to be thrown', function () {
-                expect(function () {
-                    compile(
-                        '<div parameter="TEST_PARAM"><span><!-- parameter scope --></span></div>'
-                    );
-                }).toThrow();
+                reportValueStub = jasmine.createSpy('reportValueStub');
+                reportErrorStub = jasmine.createSpy('reportErrorStub');
+
+                compile(
+                    '<div parameter="TEST_PARAM"><span><!-- parameter scope --></span></div>'
+                );
+
+                scope.$broadcast('$actionCollecting', reportValueStub, reportErrorStub);
+
+                expect(reportValueStub).not.toHaveBeenCalled();
+                expect(reportErrorStub).toHaveBeenCalledWith('TEST_PARAM', jasmine.any(Error));
             });
         });
 
