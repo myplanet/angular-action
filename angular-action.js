@@ -79,49 +79,114 @@
                 scope: true,
 
                 controller: [ '$scope', '$element', '$attrs', function (childScope, $element, $attr) {
-                    if (!$attr.hasOwnProperty('collect')) {
-                        throw new Error('The collect attribute is mandatory');
-                    }
+                    var name = null;
 
-                    var name = null,
-                        state = {
-                            value: childScope.$parent.$eval($attr.value),
-                            error: null
-                        },
-                        collectExpr = null;
-
+                    // @todo use in-time eval
                     $attr.$observe('parameter', function (value) {
                         name = value;
                     });
 
+                    // report latest value before submitting
+                    childScope.$on('$actionCollecting', function (event, reportValue, reportError) {
+                        var requestEvent = childScope.$broadcast('$actionDataRequest');
+                        var responsePromise = requestEvent.$actionDataPromiseResponse;
+
+                        // ensure we got at least something
+                        if (!responsePromise) {
+                            reportError(name, new Error('no value collected'));
+                            return;
+                        }
+
+                        // report the resolved promise outcome
+                        // (using sync inspection hack per http://stackoverflow.com/a/24091953 to avoid waiting for an async digest)
+                        // @todo support async (this is super hacky anyway!)
+                        if (responsePromise.$$state && responsePromise.$$state.status === 1) {
+                            reportValue(name, responsePromise.$$state.value);
+                        } else if (responsePromise.$$state && responsePromise.$$state.status === 2) {
+                            reportError(name, responsePromise.$$state.value);
+                        } else {
+                            reportError(name, new Error('expecting completed value promise'));
+                        }
+                    });
+                } ]
+            };
+        })
+        .directive('collect', function () {
+            return {
+                restrict: 'A',
+                scope: true,
+
+                controllerAs: '$actionData',
+
+                controller: [ '$scope', '$element', '$attrs', '$q', function (childScope, $element, $attr, $q) {
+                    var state = this;
+
+                    // public properties
+                    this.value = childScope.$parent.$eval($attr.value);
+                    this.error = null;
+
+                    // track the collection filter expression
+                    var collectExpr;
+
+                    // @todo use in-time eval
                     $attr.$observe('collect', function (value) {
                         collectExpr = value;
                     });
 
-                    childScope.$actionData = state;
+                    // error tracking
+                    var currentTrackedErrorPromise = null;
 
-                    // report latest value before submitting
-                    childScope.$on('$actionCollecting', function (event, reportValue, reportError) {
+                    function trackError(promise) {
+                        currentTrackedErrorPromise = promise;
                         state.error = null;
 
-                        var collectValue;
-
-                        if (collectExpr) {
-                            try {
-                                collectValue = childScope.$parent.$eval('$value | ' + collectExpr, { $value: state.value });
-                            } catch (e) {
-                                state.error = e;
-                                reportError();
+                        function onError(e) {
+                            if (promise !== currentTrackedErrorPromise) {
                                 return;
                             }
-                        } else {
-                            collectValue = state.value;
+
+                            state.error = e;
                         }
 
-                        reportValue(name, collectValue);
+                        // for synchronously resolved promises, report immediately
+                        // @todo remove this hacky workaround eventually
+                        if (promise.$$state && promise.$$state.status === 2) {
+                            onError(promise.$$state.value);
+                        } else {
+                            promise['catch'](onError);
+                        }
+                    }
+
+                    // report latest value before submitting
+                    childScope.$on('$actionDataRequest', function (event) {
+                        // avoid handling ancestor events
+                        if (event.defaultPrevented) {
+                            return;
+                        }
+
+                        // set up to report future result
+                        var deferred = $q.defer();
+
+                        event.$actionDataPromiseResponse = deferred.promise;
+                        event.preventDefault();
+
+                        // resolve the value promise
+                        if (collectExpr) {
+                            try {
+                                deferred.resolve(childScope.$parent.$eval('$value | ' + collectExpr, { $value: state.value }));
+                            } catch (e) {
+                                deferred.reject(e);
+                            }
+                        } else {
+                            deferred.resolve(state.value);
+                        }
+
+                        // report any error, synchronous or not
+                        trackError(deferred.promise);
                     });
 
                     // re-evaluate source value
+                    // @todo deprecate? too specific to this directive
                     childScope.$on('$actionReset', function () {
                         state.value = childScope.$parent.$eval($attr.value);
                         state.error = null;
