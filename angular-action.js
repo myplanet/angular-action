@@ -33,39 +33,44 @@
                     action.isPending = false;
                     action.error = null;
 
-                    var currentObjectFieldPromises = null;
+                    var currentObjectFieldPromiseMap = null;
 
                     childScope.$on('$actionObjectFieldDataResponse', function (event, name, valuePromise) {
                         // consume the data response
                         event.stopPropagation();
 
-                        if (!currentObjectFieldPromises) {
+                        if (!currentObjectFieldPromiseMap) {
                             return;
                         }
 
-                        currentObjectFieldPromises[name] = valuePromise;
+                        currentObjectFieldPromiseMap[name] = valuePromise;
                     });
+
+                    function collectDataPromise() {
+                        // listen to data and issue a collection request
+                        var objectPromises = currentObjectFieldPromiseMap = {};
+
+                        childScope.$broadcast('$actionDataRequest');
+
+                        // stop collecting
+                        currentObjectFieldPromiseMap = null;
+
+                        // resolve the object fields
+                        return $q.all(objectPromises);
+                    }
 
                     this.invoke = function () {
                         action.isPending = true;
                         action.error = null;
 
-                        // listen to data and issue a collection request
-                        currentObjectFieldPromises = {};
-
-                        childScope.$broadcast('$actionDataRequest');
-
-                        var objectPromises = currentObjectFieldPromises;
-                        currentObjectFieldPromises = null; // stop collecting
-
                         // resolve field data
                         // (converting field errors into null overall error)
-                        var whenValueMapReady = $q.all(objectPromises)['catch'](function () {
+                        var whenDataReady = collectDataPromise()['catch'](function () {
                             return $q.reject(null);
                         });
 
                         // run the main action if data collected OK
-                        var whenActionFinished = whenValueMapReady.then(function (valueMap) {
+                        var whenActionFinished = whenDataReady.then(function (valueMap) {
                             return childScope.$eval(doExpr, { $data: valueMap });
                         });
 
