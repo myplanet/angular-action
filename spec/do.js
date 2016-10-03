@@ -53,6 +53,16 @@ describe('angular-action do directive', function () {
         expect(postActionStub).toHaveBeenCalledWith('TEST_RESULT');
     });
 
+    it('passes collected single data value to action expression', function () {
+        paramScope.$on('$actionDataRequest', function (evt) {
+            paramScope.$emit('$actionDataResponse', ngQ.when([ 'MAIN_VALUE' ]));
+        });
+
+        contentScope.$apply(function () { contentScope.$action.invoke(); });
+
+        expect(actionStub).toHaveBeenCalledWith([ 'MAIN_VALUE' ]);
+    });
+
     it('passes collected parameter values to action expression', function () {
         paramScope.$on('$actionDataRequest', function (evt) {
             paramScope.$emit('$actionObjectFieldDataResponse', 'TEST_PARAM_A', ngQ.when('VALUE_A'));

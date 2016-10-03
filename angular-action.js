@@ -33,7 +33,19 @@
                     action.isPending = false;
                     action.error = null;
 
+                    var currentValuePromiseCollection = null;
                     var currentObjectFieldPromiseMap = null;
+
+                    childScope.$on('$actionDataResponse', function (event, valuePromise) {
+                        // consume the data response
+                        event.stopPropagation();
+
+                        if (!currentValuePromiseCollection) {
+                            return;
+                        }
+
+                        currentValuePromiseCollection.push(valuePromise);
+                    });
 
                     childScope.$on('$actionObjectFieldDataResponse', function (event, name, valuePromise) {
                         // consume the data response
@@ -48,14 +60,26 @@
 
                     function collectDataPromise() {
                         // listen to data and issue a collection request
+                        var valuePromiseCollection = currentValuePromiseCollection = [];
                         var objectPromises = currentObjectFieldPromiseMap = {};
 
                         childScope.$broadcast('$actionDataRequest');
 
                         // stop collecting
+                        currentValuePromiseCollection = null;
                         currentObjectFieldPromiseMap = null;
 
-                        // resolve the object fields
+                        // see if this is a single-value result
+                        if (valuePromiseCollection.length > 0) {
+                            // @todo check and fail if we got any object fields
+                            if (valuePromiseCollection.length !== 1) {
+                                throw new Error('expecting to collect one value only');
+                            }
+
+                            return valuePromiseCollection[0];
+                        }
+
+                        // fall back to default object field collection
                         return $q.all(objectPromises);
                     }
 
