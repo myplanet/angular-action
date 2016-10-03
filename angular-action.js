@@ -15,6 +15,7 @@
 }(this, function (angular) {
     'use strict';
 
+    // @todo on-demand interim validation
     return angular.module('mp.action', [])
         .directive('do', function () {
             return {
@@ -32,26 +33,44 @@
                     action.isPending = false;
                     action.error = null;
 
+                    var currentObjectFieldPromises = null;
+
+                    childScope.$on('$actionObjectFieldDataResponse', function (event, name, valuePromise) {
+                        // consume the data response
+                        event.stopPropagation();
+
+                        if (!currentObjectFieldPromises) {
+                            return;
+                        }
+
+                        currentObjectFieldPromises[name] = valuePromise;
+                    });
+
                     this.invoke = function () {
                         action.isPending = true;
                         action.error = null;
 
-                        var valueMap = {},
-                            collectionFailed = false;
+                        // listen to data and issue a collection request
+                        currentObjectFieldPromises = {};
 
-                        // broadcast to collect values from parameters
-                        childScope.$broadcast('$actionCollecting', function (key, value) {
-                            valueMap[key] = value;
-                        }, function () {
-                            collectionFailed = true;
+                        childScope.$broadcast('$actionDataRequest');
+
+                        var objectPromises = currentObjectFieldPromises;
+                        currentObjectFieldPromises = null; // stop collecting
+
+                        // resolve field data
+                        // (converting field errors into null overall error)
+                        var whenValueMapReady = $q.all(objectPromises)['catch'](function () {
+                            return $q.reject(null);
                         });
 
-                        if (collectionFailed) {
-                            action.isPending = false;
-                            return;
-                        }
+                        // run the main action if data collected OK
+                        var whenActionFinished = whenValueMapReady.then(function (valueMap) {
+                            return childScope.$eval(doExpr, { $data: valueMap });
+                        });
 
-                        $q.when(childScope.$eval(doExpr, { $data: valueMap })).then(function (data) {
+                        // run "then" or report errors
+                        whenActionFinished.then(function (data) {
                             childScope.$eval(thenExpr, { $data: data });
                         }, function (error) {
                             action.error = error;
@@ -86,27 +105,11 @@
                         name = value;
                     });
 
-                    // report latest value before submitting
-                    childScope.$on('$actionCollecting', function (event, reportValue, reportError) {
-                        var requestEvent = childScope.$broadcast('$actionDataRequest');
-                        var responsePromise = requestEvent.$actionDataPromiseResponse;
+                    childScope.$on('$actionDataResponse', function (event, valuePromise) {
+                        // consume the data response
+                        event.stopPropagation();
 
-                        // ensure we got at least something
-                        if (!responsePromise) {
-                            reportError(name, new Error('no value collected'));
-                            return;
-                        }
-
-                        // report the resolved promise outcome
-                        // (using sync inspection hack per http://stackoverflow.com/a/24091953 to avoid waiting for an async digest)
-                        // @todo support async (this is super hacky anyway!)
-                        if (responsePromise.$$state && responsePromise.$$state.status === 1) {
-                            reportValue(name, responsePromise.$$state.value);
-                        } else if (responsePromise.$$state && responsePromise.$$state.status === 2) {
-                            reportError(name, responsePromise.$$state.value);
-                        } else {
-                            reportError(name, new Error('expecting completed value promise'));
-                        }
+                        childScope.$emit('$actionObjectFieldDataResponse', name, valuePromise);
                     });
                 } ]
             };
@@ -159,16 +162,8 @@
 
                     // report latest value before submitting
                     childScope.$on('$actionDataRequest', function (event) {
-                        // avoid handling ancestor events
-                        if (event.defaultPrevented) {
-                            return;
-                        }
-
                         // set up to report future result
                         var deferred = $q.defer();
-
-                        event.$actionDataPromiseResponse = deferred.promise;
-                        event.preventDefault();
 
                         // resolve the value promise
                         if (collectExpr) {
@@ -181,8 +176,11 @@
                             deferred.resolve(state.value);
                         }
 
-                        // report any error, synchronous or not
+                        // report any local error, synchronous or not
                         trackError(deferred.promise);
+
+                        // report data up the chain
+                        childScope.$emit('$actionDataResponse', deferred.promise);
                     });
 
                     // re-evaluate source value

@@ -52,27 +52,46 @@ describe('angular-action parameter directive', function () {
         });
     });
 
-    describe('when $actionCollecting event received', function () {
-        var reportValueStub,
-            reportErrorStub;
+    describe('when $actionDataRequest event received', function () {
+        var reportedObjectFieldName,
+            reportedObjectFieldValue,
+            reportedObjectFieldError;
 
         beforeEach(function () {
-            reportValueStub = jasmine.createSpy('reportValueStub');
-            reportErrorStub = jasmine.createSpy('reportErrorStub');
-
             compile(
                 '<div parameter="TEST_PARAM" value="\'INIT_VALUE\'" collect><span><!-- parameter scope --></span></div>'
             );
 
-            scope.$broadcast('$actionCollecting', reportValueStub, reportErrorStub);
+            reportedObjectFieldName = null;
+            reportedObjectFieldValue = null;
+            reportedObjectFieldError = null;
+
+            scope.$on('$actionObjectFieldDataResponse', function (event, name, valuePromise) {
+                reportedObjectFieldName = name;
+
+                // @todo fix this synchronous inspection to work as proper then
+                reportedObjectFieldValue = valuePromise.$$state && valuePromise.$$state.status === 1
+                    ? valuePromise.$$state.value
+                    : null;
+
+                reportedObjectFieldError = valuePromise.$$state && valuePromise.$$state.status === 2
+                    ? valuePromise.$$state.value
+                    : null;
+            });
+
+            scope.$broadcast('$actionDataRequest');
         });
 
-        it('calls the setter callback with the parameter name and current value', function () {
-            expect(reportValueStub).toHaveBeenCalledWith('TEST_PARAM', 'INIT_VALUE');
+        it('reports the field name', function () {
+            expect(reportedObjectFieldName).toBe('TEST_PARAM');
         });
 
-        it('does not call the error callback', function () {
-            expect(reportErrorStub).not.toHaveBeenCalled();
+        it('reports the current value', function () {
+            expect(reportedObjectFieldValue).toBe('INIT_VALUE');
+        });
+
+        it('does not report error', function () {
+            expect(reportedObjectFieldError).toBe(null);
         });
 
         it('defines scope "$actionData" error as null', function () {
@@ -81,44 +100,39 @@ describe('angular-action parameter directive', function () {
     });
 
     describe('collect attribute', function () {
-        describe('when not present', function () {
-            it('causes an exception to be thrown', function () {
-                reportValueStub = jasmine.createSpy('reportValueStub');
-                reportErrorStub = jasmine.createSpy('reportErrorStub');
-
-                compile(
-                    '<div parameter="TEST_PARAM"><span><!-- parameter scope --></span></div>'
-                );
-
-                scope.$broadcast('$actionCollecting', reportValueStub, reportErrorStub);
-
-                expect(reportValueStub).not.toHaveBeenCalled();
-                expect(reportErrorStub).toHaveBeenCalledWith('TEST_PARAM', jasmine.any(Error));
-            });
-        });
-
         describe('when a filter expression is supplied', function () {
             describe('when none of the filters cause an exception', function () {
-                var reportValueStub,
-                    reportErrorStub;
+                var reportedObjectFieldValue,
+                    reportedObjectFieldError;
 
                 beforeEach(function () {
-                    reportValueStub = jasmine.createSpy('reportValueStub');
-                    reportErrorStub = jasmine.createSpy('reportErrorStub');
-
                     compile(
                         '<div parameter="TEST_PARAM" value="\'INIT_VALUE\'" collect="lowercase"><span><!-- parameter scope --></span></div>'
                     );
 
-                    scope.$broadcast('$actionCollecting', reportValueStub, reportErrorStub);
+                    reportedObjectFieldValue = null;
+                    reportedObjectFieldError = null;
+
+                    scope.$on('$actionObjectFieldDataResponse', function (event, name, valuePromise) {
+                        // @todo fix this synchronous inspection to work as proper then
+                        reportedObjectFieldValue = valuePromise.$$state && valuePromise.$$state.status === 1
+                            ? valuePromise.$$state.value
+                            : null;
+
+                        reportedObjectFieldError = valuePromise.$$state && valuePromise.$$state.status === 2
+                            ? valuePromise.$$state.value
+                            : null;
+                    });
+
+                    scope.$broadcast('$actionDataRequest');
                 });
 
-                it('calls the setter callback with the current value after passing it through the filters', function () {
-                    expect(reportValueStub).toHaveBeenCalledWith('TEST_PARAM', 'init_value');
+                it('reports the current value after passing it through the filters', function () {
+                    expect(reportedObjectFieldValue).toBe('init_value');
                 });
 
-                it('does not call the error callback', function () {
-                    expect(reportErrorStub).not.toHaveBeenCalled();
+                it('does not report error', function () {
+                    expect(reportedObjectFieldError).toBe(null);
                 });
 
                 it('defines scope "$actionData" error as null', function () {
@@ -127,13 +141,11 @@ describe('angular-action parameter directive', function () {
             });
 
             describe('when one of the filters causes an exception', function () {
-                var reportValueStub,
-                    reportErrorStub,
+                var reportedObjectFieldValue,
+                    reportedObjectFieldError,
                     exception;
 
                 beforeEach(function () {
-                    reportValueStub = jasmine.createSpy('reportValueStub');
-                    reportErrorStub = jasmine.createSpy('reportErrorStub');
                     exception = new Error('TEST');
 
                     angular.module('throwsException', []).filter('throwsException', function () {
@@ -148,15 +160,29 @@ describe('angular-action parameter directive', function () {
                         '<div parameter="TEST_PARAM" value="\'INIT_VALUE\'" collect="lowercase | throwsException"><span><!-- parameter scope --></span></div>'
                     );
 
-                    scope.$broadcast('$actionCollecting', reportValueStub, reportErrorStub);
+                    reportedObjectFieldValue = null;
+                    reportedObjectFieldError = null;
+
+                    scope.$on('$actionObjectFieldDataResponse', function (event, name, valuePromise) {
+                        // @todo fix this synchronous inspection to work as proper then
+                        reportedObjectFieldValue = valuePromise.$$state && valuePromise.$$state.status === 1
+                            ? valuePromise.$$state.value
+                            : null;
+
+                        reportedObjectFieldError = valuePromise.$$state && valuePromise.$$state.status === 2
+                            ? valuePromise.$$state.value
+                            : null;
+                    });
+
+                    scope.$broadcast('$actionDataRequest');
                 });
 
-                it('does not call the setter callback', function () {
-                    expect(reportValueStub).not.toHaveBeenCalled();
+                it('does not report value', function () {
+                    expect(reportedObjectFieldValue).toBe(null);
                 });
 
-                it('calls the error callback with the parameter name and the exception', function () {
-                    expect(reportErrorStub).toHaveBeenCalled();
+                it('reports the error', function () {
+                    expect(reportedObjectFieldError).toBe(exception);
                 });
 
                 it('defines scope "$actionData" error as the exception that was thrown', function () {
