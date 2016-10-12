@@ -60,18 +60,15 @@
         });
 
         ownerScope.$on('$actionObjectFieldDataResponse', function (event, name, valuePromise) {
-            // consume the data response
-            event.stopPropagation();
-
             var deferred = fieldDeferredValueMap[name];
 
-            if (!deferred) {
-                throw new Error('unexpected field data');
+            // silently ignore field data not intended for us
+            if (!deferred || fieldScopeMap[name] !== event.targetScope) {
+                return;
             }
 
-            if (fieldScopeMap[name] !== event.targetScope) {
-                throw new Error('mismatching parameter scope');
-            }
+            // consume the data response only if not ignoring
+            event.stopPropagation();
 
             deferred.resolve(valuePromise);
         });
@@ -162,6 +159,17 @@
 
                         childScope.$broadcast('$actionReset');
                     };
+                } ]
+            };
+        })
+        .directive('parameterMap', function () {
+            return {
+                restrict: 'A',
+                scope: true,
+
+                controller: [ '$scope', '$q', function (childScope, $q) {
+                    // required object map functionality
+                    installObjectFieldRegistry($q, childScope, false);
                 } ]
             };
         })
