@@ -15,6 +15,68 @@
 }(this, function (angular) {
     'use strict';
 
+    function installObjectFieldRegistry($q, ownerScope, isOptional) {
+        var fieldScopeMap = {};
+        var fieldDeferredValueMap = {};
+
+        ownerScope.$on('$actionDataObjectFieldCreated', function (event, name) {
+            // consume the data response
+            event.stopPropagation();
+
+            var fieldScope = event.targetScope;
+
+            if (fieldScopeMap[name]) {
+                // @todo might be over-zealous in case of dynamic field replacement
+                throw new Error('duplicate field name');
+            }
+
+            fieldScopeMap[name] = fieldScope;
+
+            fieldScope.$on('$destroy', function () {
+                if (fieldScopeMap[name] === fieldScope) {
+                    delete fieldScopeMap[name];
+                }
+            });
+        });
+
+        ownerScope.$on('$actionDataRequest', function (event) {
+            var valuePromiseMap = {};
+            var hasAnyFields = false;
+
+            for (var name in fieldScopeMap) {
+                var deferred = $q.defer();
+
+                valuePromiseMap[name] = deferred.promise;
+                fieldDeferredValueMap[name] = deferred;
+
+                hasAnyFields = true;
+            }
+
+            if (isOptional && !hasAnyFields) {
+                return;
+            }
+
+            ownerScope.$emit('$actionDataResponse', $q.all(valuePromiseMap));
+        });
+
+        ownerScope.$on('$actionObjectFieldDataResponse', function (event, name, valuePromise) {
+            // consume the data response
+            event.stopPropagation();
+
+            var deferred = fieldDeferredValueMap[name];
+
+            if (!deferred) {
+                throw new Error('unexpected field data');
+            }
+
+            if (fieldScopeMap[name] !== event.targetScope) {
+                throw new Error('mismatching parameter scope');
+            }
+
+            deferred.resolve(valuePromise);
+        });
+    }
+
     // @todo on-demand interim validation
     return angular.module('mp.action', [])
         .directive('do', function () {
@@ -33,8 +95,10 @@
                     action.isPending = false;
                     action.error = null;
 
+                    installObjectFieldRegistry($q, childScope, true);
+
+                    // @todo use a deferred?
                     var currentValuePromiseCollection = null;
-                    var currentObjectFieldPromiseMap = null;
 
                     childScope.$on('$actionDataResponse', function (event, valuePromise) {
                         // consume the data response
@@ -47,40 +111,20 @@
                         currentValuePromiseCollection.push(valuePromise);
                     });
 
-                    childScope.$on('$actionObjectFieldDataResponse', function (event, name, valuePromise) {
-                        // consume the data response
-                        event.stopPropagation();
-
-                        if (!currentObjectFieldPromiseMap) {
-                            return;
-                        }
-
-                        currentObjectFieldPromiseMap[name] = valuePromise;
-                    });
-
                     function collectDataPromise() {
                         // listen to data and issue a collection request
                         var valuePromiseCollection = currentValuePromiseCollection = [];
-                        var objectPromises = currentObjectFieldPromiseMap = {};
 
                         childScope.$broadcast('$actionDataRequest');
 
                         // stop collecting
                         currentValuePromiseCollection = null;
-                        currentObjectFieldPromiseMap = null;
 
-                        // see if this is a single-value result
-                        if (valuePromiseCollection.length > 0) {
-                            // @todo check and fail if we got any object fields
-                            if (valuePromiseCollection.length !== 1) {
-                                throw new Error('expecting to collect one value only');
-                            }
-
-                            return valuePromiseCollection[0];
+                        if (valuePromiseCollection.length > 1) {
+                            throw new Error('expecting to collect at most one value, got ' + valuePromiseCollection.length);
                         }
 
-                        // fall back to default object field collection
-                        return $q.all(objectPromises);
+                        return valuePromiseCollection[0] || $q.when();
                     }
 
                     this.invoke = function () {
@@ -127,12 +171,10 @@
                 scope: true,
 
                 controller: [ '$scope', '$element', '$attrs', function (childScope, $element, $attr) {
-                    var name = null;
+                    // @todo dynamic param!
+                    var name = $attr.parameter;
 
-                    // @todo use in-time eval
-                    $attr.$observe('parameter', function (value) {
-                        name = value;
-                    });
+                    childScope.$emit('$actionDataObjectFieldCreated', name);
 
                     childScope.$on('$actionDataResponse', function (event, valuePromise) {
                         // consume the data response

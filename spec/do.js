@@ -64,6 +64,9 @@ describe('angular-action do directive', function () {
     });
 
     it('passes collected parameter values to action expression', function () {
+        paramScope.$emit('$actionDataObjectFieldCreated', 'TEST_PARAM_A');
+        paramScope.$emit('$actionDataObjectFieldCreated', 'TEST_PARAM_B');
+
         paramScope.$on('$actionDataRequest', function (evt) {
             paramScope.$emit('$actionObjectFieldDataResponse', 'TEST_PARAM_A', ngQ.when('VALUE_A'));
             paramScope.$emit('$actionObjectFieldDataResponse', 'TEST_PARAM_B', ngQ.when('VALUE_B'));
@@ -78,6 +81,9 @@ describe('angular-action do directive', function () {
     });
 
     it('does not invoke the action expression when parameter collection encounters an error', function () {
+        paramScope.$emit('$actionDataObjectFieldCreated', 'TEST_PARAM_A');
+        paramScope.$emit('$actionDataObjectFieldCreated', 'TEST_PARAM_B');
+
         paramScope.$on('$actionDataRequest', function (evt) {
             paramScope.$emit('$actionObjectFieldDataResponse', 'TEST_PARAM_A', ngQ.when('VALUE_A'));
             paramScope.$emit('$actionObjectFieldDataResponse', 'TEST_PARAM_B', ngQ.reject(''));
