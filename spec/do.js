@@ -1,9 +1,12 @@
 describe('angular-action do directive', function () {
     var scope, contentScope, paramScope, actionStub, postActionStub;
+    var ngQ;
 
     beforeEach(module('mp.action'));
 
-    beforeEach(inject(function ($rootScope, $compile) {
+    beforeEach(inject(function ($rootScope, $compile, $q) {
+        ngQ = $q;
+
         scope = $rootScope.$new();
 
         actionStub = scope.actionStub = jasmine.createSpy('actionStub');
@@ -50,10 +53,23 @@ describe('angular-action do directive', function () {
         expect(postActionStub).toHaveBeenCalledWith('TEST_RESULT');
     });
 
+    it('passes collected single data value to action expression', function () {
+        paramScope.$on('$actionDataRequest', function (evt) {
+            paramScope.$emit('$actionDataResponse', ngQ.when([ 'MAIN_VALUE' ]));
+        });
+
+        contentScope.$apply(function () { contentScope.$action.invoke(); });
+
+        expect(actionStub).toHaveBeenCalledWith([ 'MAIN_VALUE' ]);
+    });
+
     it('passes collected parameter values to action expression', function () {
-        paramScope.$on('$actionCollecting', function (evt, reportValue, reportError) {
-            reportValue('TEST_PARAM_A', 'VALUE_A');
-            reportValue('TEST_PARAM_B', 'VALUE_B');
+        paramScope.$emit('$actionDataObjectFieldCreated', 'TEST_PARAM_A');
+        paramScope.$emit('$actionDataObjectFieldCreated', 'TEST_PARAM_B');
+
+        paramScope.$on('$actionDataRequest', function (evt) {
+            paramScope.$emit('$actionObjectFieldDataResponse', 'TEST_PARAM_A', ngQ.when('VALUE_A'));
+            paramScope.$emit('$actionObjectFieldDataResponse', 'TEST_PARAM_B', ngQ.when('VALUE_B'));
         });
 
         contentScope.$apply(function () { contentScope.$action.invoke(); });
@@ -65,9 +81,12 @@ describe('angular-action do directive', function () {
     });
 
     it('does not invoke the action expression when parameter collection encounters an error', function () {
-        paramScope.$on('$actionCollecting', function (evt, reportValue, reportError) {
-            reportValue('TEST_PARAM_A', 'VALUE_A');
-            reportError();
+        paramScope.$emit('$actionDataObjectFieldCreated', 'TEST_PARAM_A');
+        paramScope.$emit('$actionDataObjectFieldCreated', 'TEST_PARAM_B');
+
+        paramScope.$on('$actionDataRequest', function (evt) {
+            paramScope.$emit('$actionObjectFieldDataResponse', 'TEST_PARAM_A', ngQ.when('VALUE_A'));
+            paramScope.$emit('$actionObjectFieldDataResponse', 'TEST_PARAM_B', ngQ.reject(''));
         });
 
         contentScope.$apply(function () { contentScope.$action.invoke(); });
