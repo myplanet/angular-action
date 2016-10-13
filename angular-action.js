@@ -19,6 +19,7 @@
         var fieldScopeMap = {};
         var fieldDeferredValueMap = {};
 
+        // keep track of declared object fields as they are instantiated and destroyed
         ownerScope.$on('$actionDataObjectFieldCreated', function (event, name) {
             // consume the data response
             event.stopPropagation();
@@ -39,6 +40,7 @@
             });
         });
 
+        // when a data request comes in, set up a deferred object response and send up as single value
         ownerScope.$on('$actionDataRequest', function (event) {
             var valuePromiseMap = {};
             var hasAnyFields = false;
@@ -56,9 +58,12 @@
                 return;
             }
 
+            // standard single-value response
             ownerScope.$emit('$actionDataResponse', $q.all(valuePromiseMap));
         });
 
+        // fill up the current deferred object fields with field responses
+        // that are coming in from child scopes
         ownerScope.$on('$actionObjectFieldDataResponse', function (event, name, valuePromise) {
             var deferred = fieldDeferredValueMap[name];
 
@@ -92,11 +97,14 @@
                     action.isPending = false;
                     action.error = null;
 
+                    // for traditional usage, also inject implicit object map behaviour
+                    // (which converts child parameter data responses into the standard single-value response)
                     installObjectFieldRegistry($q, childScope, true);
 
                     // @todo use a deferred?
                     var currentValuePromiseCollection = null;
 
+                    // collect standard single-value responses
                     childScope.$on('$actionDataResponse', function (event, valuePromise) {
                         // consume the data response
                         event.stopPropagation();
@@ -168,7 +176,7 @@
                 scope: true,
 
                 controller: [ '$scope', '$q', function (childScope, $q) {
-                    // required object map functionality
+                    // object map functionality (convert parameter data into single-value response)
                     installObjectFieldRegistry($q, childScope, false);
                 } ]
             };
@@ -182,8 +190,10 @@
                     // @todo dynamic param!
                     var name = $attr.parameter;
 
+                    // declare our existence
                     childScope.$emit('$actionDataObjectFieldCreated', name);
 
+                    // collect standard single-value response and report it as field data
                     childScope.$on('$actionDataResponse', function (event, valuePromise) {
                         // consume the data response
                         event.stopPropagation();
