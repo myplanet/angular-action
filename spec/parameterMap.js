@@ -32,8 +32,8 @@ describe('angular-action parameter-map directive', function () {
         paramScope.$emit('$actionDataObjectFieldCreated', 'TEST_SUB_PARAM_B');
 
         paramScope.$on('$actionDataRequest', function (evt) {
-            paramScope.$emit('$actionObjectFieldDataResponse', 'TEST_SUB_PARAM_A', ngQ.when('VALUE_A'));
-            paramScope.$emit('$actionObjectFieldDataResponse', 'TEST_SUB_PARAM_B', ngQ.when('VALUE_B'));
+            paramScope.$emit('$actionDataObjectFieldResponse', 'TEST_SUB_PARAM_A', ngQ.when('VALUE_A'));
+            paramScope.$emit('$actionDataObjectFieldResponse', 'TEST_SUB_PARAM_B', ngQ.when('VALUE_B'));
         });
 
         contentScope.$apply(function () { contentScope.$action.invoke(); });

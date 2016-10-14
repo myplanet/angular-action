@@ -68,8 +68,8 @@ describe('angular-action do directive', function () {
         paramScope.$emit('$actionDataObjectFieldCreated', 'TEST_PARAM_B');
 
         paramScope.$on('$actionDataRequest', function (evt) {
-            paramScope.$emit('$actionObjectFieldDataResponse', 'TEST_PARAM_A', ngQ.when('VALUE_A'));
-            paramScope.$emit('$actionObjectFieldDataResponse', 'TEST_PARAM_B', ngQ.when('VALUE_B'));
+            paramScope.$emit('$actionDataObjectFieldResponse', 'TEST_PARAM_A', ngQ.when('VALUE_A'));
+            paramScope.$emit('$actionDataObjectFieldResponse', 'TEST_PARAM_B', ngQ.when('VALUE_B'));
         });
 
         contentScope.$apply(function () { contentScope.$action.invoke(); });
@@ -85,8 +85,8 @@ describe('angular-action do directive', function () {
         paramScope.$emit('$actionDataObjectFieldCreated', 'TEST_PARAM_B');
 
         paramScope.$on('$actionDataRequest', function (evt) {
-            paramScope.$emit('$actionObjectFieldDataResponse', 'TEST_PARAM_A', ngQ.when('VALUE_A'));
-            paramScope.$emit('$actionObjectFieldDataResponse', 'TEST_PARAM_B', ngQ.reject(''));
+            paramScope.$emit('$actionDataObjectFieldResponse', 'TEST_PARAM_A', ngQ.when('VALUE_A'));
+            paramScope.$emit('$actionDataObjectFieldResponse', 'TEST_PARAM_B', ngQ.reject(''));
         });
 
         contentScope.$apply(function () { contentScope.$action.invoke(); });

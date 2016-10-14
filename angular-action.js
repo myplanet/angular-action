@@ -64,7 +64,7 @@
 
         // fill up the current deferred object fields with field responses
         // that are coming in from child scopes
-        ownerScope.$on('$actionObjectFieldDataResponse', function (event, name, valuePromise) {
+        ownerScope.$on('$actionDataObjectFieldResponse', function (event, name, valuePromise) {
             var deferred = fieldDeferredValueMap[name];
 
             // silently ignore field data not intended for us
@@ -198,7 +198,7 @@
                         // consume the data response
                         event.stopPropagation();
 
-                        childScope.$emit('$actionObjectFieldDataResponse', name, valuePromise);
+                        childScope.$emit('$actionDataObjectFieldResponse', name, valuePromise);
                     });
                 } ]
             };

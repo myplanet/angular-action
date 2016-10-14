@@ -66,7 +66,7 @@ describe('angular-action parameter directive', function () {
             reportedObjectFieldValue = null;
             reportedObjectFieldError = null;
 
-            scope.$on('$actionObjectFieldDataResponse', function (event, name, valuePromise) {
+            scope.$on('$actionDataObjectFieldResponse', function (event, name, valuePromise) {
                 reportedObjectFieldName = name;
 
                 // @todo fix this synchronous inspection to work as proper then
@@ -113,7 +113,7 @@ describe('angular-action parameter directive', function () {
                     reportedObjectFieldValue = null;
                     reportedObjectFieldError = null;
 
-                    scope.$on('$actionObjectFieldDataResponse', function (event, name, valuePromise) {
+                    scope.$on('$actionDataObjectFieldResponse', function (event, name, valuePromise) {
                         // @todo fix this synchronous inspection to work as proper then
                         reportedObjectFieldValue = valuePromise.$$state && valuePromise.$$state.status === 1
                             ? valuePromise.$$state.value
@@ -163,7 +163,7 @@ describe('angular-action parameter directive', function () {
                     reportedObjectFieldValue = null;
                     reportedObjectFieldError = null;
 
-                    scope.$on('$actionObjectFieldDataResponse', function (event, name, valuePromise) {
+                    scope.$on('$actionDataObjectFieldResponse', function (event, name, valuePromise) {
                         // @todo fix this synchronous inspection to work as proper then
                         reportedObjectFieldValue = valuePromise.$$state && valuePromise.$$state.status === 1
                             ? valuePromise.$$state.value
