@@ -186,9 +186,9 @@
                 restrict: 'A',
                 scope: true,
 
-                controller: [ '$scope', '$element', '$attrs', function (childScope, $element, $attr) {
-                    // @todo dynamic param!
-                    var name = $attr.parameter;
+                controller: [ '$scope', '$element', '$attrs', '$interpolate', function (childScope, $element, $attr, $interpolate) {
+                    // accept interpolated expressions
+                    var name = $interpolate($attr.parameter)(childScope);
 
                     // declare our existence
                     childScope.$emit('$actionDataObjectFieldCreated', name);

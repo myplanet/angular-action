@@ -222,4 +222,31 @@ describe('angular-action parameter directive', function () {
             expect(paramScope.$actionData.error).toBe(null);
         });
     });
+
+    describe('given a dynamic name expression', function () {
+        var createdSpy;
+
+        beforeEach(function () {
+            inject(function ($rootScope, $compile) {
+                scope = $rootScope.$new();
+                createdSpy = jasmine.createSpy('createSpy');
+
+                scope.$on('$actionDataObjectFieldCreated', createdSpy);
+                scope.testParamName = 'TEST_DYNAMIC_PARAM';
+
+                var dom = angular.element('<div parameter="{{ testParamName }}"></div>');
+
+                $compile(dom)(scope);
+
+                scope.$digest();
+            });
+        });
+
+        it('reports the evaluated result of the expression', function () {
+            expect(createdSpy).toHaveBeenCalledWith(
+                jasmine.any(Object),
+                'TEST_DYNAMIC_PARAM'
+            );
+        });
+    });
 });
